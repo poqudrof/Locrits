@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Locrit{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block head %}{% endblock %}
+</head>
+<body>
+    {% if session.user_id %}
+    <header class="header">
+        <nav class="container navbar">
+            <a href="{{ url_for('dashboard') }}" class="navbar-brand">
+                🏠 Locrit
+            </a>
+            <ul class="navbar-nav">
+                <li><a href="{{ url_for('dashboard') }}" class="nav-link {% if request.endpoint == 'dashboard' %}active{% endif %}">Tableau de bord</a></li>
+                <li><a href="{{ url_for('locrits_list') }}" class="nav-link {% if request.endpoint in ['locrits_list', 'create_locrit', 'edit_locrit'] %}active{% endif %}">Mes Locrits</a></li>
+                <li><a href="{{ url_for('app_config') }}" class="nav-link {% if request.endpoint == 'app_config' %}active{% endif %}">Configuration</a></li>
+                <li>
+                    <span class="text-muted">{{ session.user_name }}</span>
+                    <a href="{{ url_for('logout') }}" class="btn btn-outline btn-sm ml-2">Déconnexion</a>
+                </li>
+            </ul>
+        </nav>
+    </header>
+    {% endif %}
+
+    <main class="{% if not session.user_id %}login-container{% else %}container{% endif %}">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    <div class="alert alert-{{ 'error' if category == 'error' else category }}">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

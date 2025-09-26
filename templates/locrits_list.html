@@ -1,0 +1,269 @@
+{% extends "base.html" %}
+
+{% block title %}Mes Locrits - Locrit{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Mes Locrits</h1>
+    <a href="{{ url_for('create_locrit') }}" class="btn btn-primary">
+        ➕ Nouveau Locrit
+    </a>
+</div>
+
+{% if locrits %}
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Nom</th>
+                        <th>Description</th>
+                        <th>Statut</th>
+                        <th>Modèle</th>
+                        <th>Adresse publique</th>
+                        <th>Créé</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for locrit in locrits %}
+                    <tr>
+                        <td>
+                            <strong>{{ locrit.name }}</strong>
+                        </td>
+                        <td>
+                            <span title="{{ locrit.description }}">
+                                {{ locrit.description[:80] }}{% if locrit.description|length > 80 %}...{% endif %}
+                            </span>
+                        </td>
+                        <td>
+                            {% if locrit.active %}
+                                <span class="badge badge-success">🟢 Actif</span>
+                            {% else %}
+                                <span class="badge badge-danger">🔴 Inactif</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <code>{{ locrit.model }}</code>
+                        </td>
+                        <td>
+                            {% if locrit.public_address %}
+                                <a href="http://{{ locrit.public_address }}" target="_blank" class="text-primary">
+                                    {{ locrit.public_address }}
+                                </a>
+                            {% else %}
+                                <span class="text-muted">-</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-muted">
+                            {% if locrit.created_at %}
+                                {{ locrit.created_at[:10] }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="d-flex gap-2">
+                                <!-- Chat -->
+                                <a href="{{ url_for('chat_with_locrit', locrit_name=locrit.name) }}"
+                                   class="btn btn-sm btn-primary"
+                                   title="Discuter avec {{ locrit.name }}"
+                                   {% if not locrit.active %}style="opacity: 0.6;"{% endif %}>
+                                    💬
+                                </a>
+
+                                <!-- Toggle status -->
+                                <button class="btn btn-sm btn-outline toggle-locrit"
+                                        data-locrit="{{ locrit.name }}"
+                                        title="{% if locrit.active %}Désactiver{% else %}Activer{% endif %}">
+                                    {% if locrit.active %}⏹️{% else %}▶️{% endif %}
+                                </button>
+
+                                <!-- Edit -->
+                                <a href="{{ url_for('edit_locrit', locrit_name=locrit.name) }}"
+                                   class="btn btn-sm btn-outline"
+                                   title="Éditer">
+                                    ⚙️
+                                </a>
+
+                                <!-- View details -->
+                                <button class="btn btn-sm btn-outline view-details"
+                                        data-locrit="{{ locrit.name }}"
+                                        title="Voir les détails">
+                                    📄
+                                </button>
+
+                                <!-- Delete -->
+                                <button class="btn btn-sm btn-danger delete-locrit"
+                                        data-locrit="{{ locrit.name }}"
+                                        title="Supprimer">
+                                    🗑️
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- Row for details (hidden by default) -->
+                    <tr id="details-{{ loop.index }}" class="locrit-details" style="display: none;">
+                        <td colspan="7">
+                            <div class="card" style="margin: 0; border: none; background-color: #f8fafc;">
+                                <div class="d-flex gap-4">
+                                    <!-- Open to settings -->
+                                    <div style="flex: 1;">
+                                        <h5>🔐 Ouvert à</h5>
+                                        <ul style="list-style: none; padding: 0; font-size: 0.875rem;">
+                                            <li>👥 Humains: {% if locrit.open_to.humans %}✅{% else %}❌{% endif %}</li>
+                                            <li>🤖 Autres Locrits: {% if locrit.open_to.locrits %}✅{% else %}❌{% endif %}</li>
+                                            <li>📧 Invitations: {% if locrit.open_to.invitations %}✅{% else %}❌{% endif %}</li>
+                                            <li>🌐 Internet: {% if locrit.open_to.internet %}✅{% else %}❌{% endif %}</li>
+                                            <li>🏢 Plateforme: {% if locrit.open_to.platform %}✅{% else %}❌{% endif %}</li>
+                                        </ul>
+                                    </div>
+
+                                    <!-- Access to settings -->
+                                    <div style="flex: 1;">
+                                        <h5>📊 Accès aux données</h5>
+                                        <ul style="list-style: none; padding: 0; font-size: 0.875rem;">
+                                            <li>📝 Logs: {% if locrit.access_to.logs %}✅{% else %}❌{% endif %}</li>
+                                            <li>🧠 Mémoire rapide: {% if locrit.access_to.quick_memory %}✅{% else %}❌{% endif %}</li>
+                                            <li>🗄️ Mémoire complète: {% if locrit.access_to.full_memory %}✅{% else %}❌{% endif %}</li>
+                                            <li>🤖 Infos LLM: {% if locrit.access_to.llm_info %}✅{% else %}❌{% endif %}</li>
+                                        </ul>
+                                    </div>
+
+                                    <!-- Metadata -->
+                                    <div style="flex: 1;">
+                                        <h5>📅 Informations</h5>
+                                        <div style="font-size: 0.875rem;">
+                                            <p><strong>Créé:</strong><br>{{ locrit.created_at[:19] if locrit.created_at else 'N/A' }}</p>
+                                            <p><strong>Modifié:</strong><br>{{ locrit.updated_at[:19] if locrit.updated_at else 'N/A' }}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+{% else %}
+    <div class="card">
+        <div class="text-center" style="padding: 3rem;">
+            <h3>🏠 Aucun Locrit configuré</h3>
+            <p class="text-muted mb-4">Vous n'avez pas encore créé de Locrit. Commencez par en créer un !</p>
+            <a href="{{ url_for('create_locrit') }}" class="btn btn-primary">
+                ➕ Créer mon premier Locrit
+            </a>
+        </div>
+    </div>
+{% endif %}
+
+<!-- Modal de confirmation de suppression -->
+<div id="deleteModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 2rem; border-radius: 0.5rem; min-width: 400px;">
+        <h3>Confirmer la suppression</h3>
+        <p>Êtes-vous sûr de vouloir supprimer le Locrit <strong id="deleteLocritName"></strong> ?</p>
+        <p class="text-danger">Cette action est irréversible.</p>
+        <div class="d-flex gap-2 justify-content-end mt-4">
+            <button id="cancelDelete" class="btn btn-outline">Annuler</button>
+            <button id="confirmDelete" class="btn btn-danger">Supprimer</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Toggle Locrit status
+document.querySelectorAll('.toggle-locrit').forEach(button => {
+    button.addEventListener('click', async function() {
+        const locritName = this.dataset.locrit;
+        const originalText = this.innerHTML;
+
+        try {
+            this.disabled = true;
+            this.innerHTML = '⏳';
+
+            const response = await fetch(`/locrits/${encodeURIComponent(locritName)}/toggle`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                window.location.reload();
+            } else {
+                alert('Erreur: ' + (result.error || 'Erreur inconnue'));
+                this.innerHTML = originalText;
+                this.disabled = false;
+            }
+        } catch (error) {
+            console.error('Erreur:', error);
+            alert('Erreur de connexion');
+            this.innerHTML = originalText;
+            this.disabled = false;
+        }
+    });
+});
+
+// View details toggle
+document.querySelectorAll('.view-details').forEach((button, index) => {
+    button.addEventListener('click', function() {
+        const detailsRow = document.getElementById(`details-${index + 1}`);
+        if (detailsRow.style.display === 'none') {
+            detailsRow.style.display = 'table-row';
+            this.innerHTML = '📁';
+            this.title = 'Masquer les détails';
+        } else {
+            detailsRow.style.display = 'none';
+            this.innerHTML = '📄';
+            this.title = 'Voir les détails';
+        }
+    });
+});
+
+// Delete Locrit
+let locritToDelete = null;
+const deleteModal = document.getElementById('deleteModal');
+const deleteLocritName = document.getElementById('deleteLocritName');
+const cancelDelete = document.getElementById('cancelDelete');
+const confirmDelete = document.getElementById('confirmDelete');
+
+document.querySelectorAll('.delete-locrit').forEach(button => {
+    button.addEventListener('click', function() {
+        locritToDelete = this.dataset.locrit;
+        deleteLocritName.textContent = locritToDelete;
+        deleteModal.style.display = 'block';
+    });
+});
+
+cancelDelete.addEventListener('click', function() {
+    deleteModal.style.display = 'none';
+    locritToDelete = null;
+});
+
+confirmDelete.addEventListener('click', function() {
+    if (locritToDelete) {
+        // Create a form and submit it
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/locrits/${encodeURIComponent(locritToDelete)}/delete`;
+        document.body.appendChild(form);
+        form.submit();
+    }
+});
+
+// Close modal when clicking outside
+deleteModal.addEventListener('click', function(e) {
+    if (e.target === deleteModal) {
+        deleteModal.style.display = 'none';
+        locritToDelete = null;
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,141 @@
+advanced:
+  async_timeout: 30
+  max_concurrent_requests: 10
+  retry_attempts: 3
+  retry_delay: 1
+auth:
+  auto_login: false
+  remember_user: true
+  session_timeout: 3600
+central_server:
+  discovery_interval: 300
+  enabled: true
+  register_on_startup: false
+  url: https://central.locrit.com
+firebase:
+  api_key: ''
+  auth_domain: ''
+  database_url: ''
+  project_id: ''
+  storage_bucket: ''
+locrits:
+  default_settings:
+    access_to:
+      full_memory: false
+      llm_info: true
+      logs: true
+      quick_memory: true
+    open_to:
+      humans: true
+      internet: false
+      invitations: true
+      locrits: true
+      platform: false
+  instances:
+    Bob Technique:
+      access_to:
+        full_memory: false
+        llm_info: false
+        logs: false
+        quick_memory: true
+      active: true
+      created_at: '2025-09-13T14:29:07.098618'
+      description: Expert en programmation et technologies
+      ollama_model: codellama
+      open_to:
+        humans: true
+        internet: false
+        invitations: false
+        locrits: true
+        platform: false
+      public_address: bob.dev.local
+      updated_at: '2025-09-18T15:30:12.248480+00:00'
+    Locrit root:
+      access_to:
+        full_memory: false
+        llm_info: true
+        logs: true
+        quick_memory: true
+      active: false
+      created_at: '2025-09-14T18:57:16.743340'
+      description: Le premire locrit
+      ollama_model: llama3.2
+      open_to:
+        humans: true
+        internet: false
+        invitations: true
+        locrits: true
+        platform: false
+      public_address: ''
+      updated_at: '2025-09-17T21:18:43.422396+00:00'
+    Marie Recherche:
+      access_to:
+        full_memory: true
+        llm_info: true
+        logs: true
+        quick_memory: true
+      active: false
+      created_at: '2025-09-13T14:29:07.098617'
+      description: Spécialisée dans la recherche et l'analyse
+      ollama_model: llama3.2
+      open_to:
+        humans: true
+        internet: true
+        invitations: true
+        locrits: true
+        platform: false
+      public_address: marie.example.com
+    Pixie Assistant:
+      access_to:
+        full_memory: false
+        llm_info: true
+        logs: true
+        quick_memory: true
+      active: true
+      created_at: '2025-09-13T14:29:07.098610'
+      description: Assistant personnel intelligent et organisé
+      ollama_model: llama3.2
+      open_to:
+        humans: true
+        internet: false
+        invitations: true
+        locrits: true
+        platform: false
+      public_address: pixie.localhost.run
+logging:
+  backup_count: 5
+  console_output: true
+  file_path: logs/locrit.log
+  level: INFO
+  max_file_size: 10MB
+memory:
+  database_path: data/locrit_memory.db
+  embedding_model: all-MiniLM-L6-v2
+  max_messages: 10000
+  vector_index_path: data/vector_index.faiss
+network:
+  api_server:
+    auto_start: false
+    host: 0.0.0.0
+    port: 8000
+  tunnel:
+    auto_start: false
+    custom_subdomain: ''
+    enabled: false
+    provider: localhost.run
+ollama:
+  base_url: http://100.120.224.11:11434/
+  default_model: llama3.2:latest
+  host: localhost
+  port: 11434
+  timeout: 30
+search:
+  max_results: 10
+  provider: duckduckgo
+  safe_search: moderate
+ui:
+  auto_refresh: true
+  max_log_lines: 1000
+  refresh_interval: 5
+  show_timestamps: true
+  theme: dark

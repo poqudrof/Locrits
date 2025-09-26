@@ -1,0 +1,158 @@
+{% extends "base.html" %}
+
+{% block title %}Tableau de bord - Locrit{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Tableau de bord</h1>
+    <a href="{{ url_for('create_locrit') }}" class="btn btn-primary">
+        ➕ Nouveau Locrit
+    </a>
+</div>
+
+<!-- Statistiques -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-number">{{ stats.total_locrits or 0 }}</div>
+        <div class="stat-label">Total Locrits</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number text-success">{{ stats.active_locrits or 0 }}</div>
+        <div class="stat-label">Actifs</div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-number text-muted">{{ stats.inactive_locrits or 0 }}</div>
+        <div class="stat-label">Inactifs</div>
+    </div>
+</div>
+
+<!-- Liste rapide des Locrits -->
+<div class="card">
+    <div class="card-header">
+        <div class="d-flex justify-content-between align-items-center">
+            <h2 class="card-title">Mes Locrits récents</h2>
+            <a href="{{ url_for('locrits_list') }}" class="btn btn-outline btn-sm">
+                Voir tout
+            </a>
+        </div>
+    </div>
+
+    {% if locrits %}
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Nom</th>
+                        <th>Description</th>
+                        <th>Statut</th>
+                        <th>Modèle</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for locrit in locrits[:5] %}
+                    <tr>
+                        <td>
+                            <strong>{{ locrit.name }}</strong>
+                        </td>
+                        <td>
+                            <span class="text-muted">{{ locrit.description[:50] }}{% if locrit.description|length > 50 %}...{% endif %}</span>
+                        </td>
+                        <td>
+                            {% if locrit.active %}
+                                <span class="badge badge-success">🟢 Actif</span>
+                            {% else %}
+                                <span class="badge badge-danger">🔴 Inactif</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <code>{{ locrit.model }}</code>
+                        </td>
+                        <td>
+                            <div class="d-flex gap-2">
+                                <button class="btn btn-sm btn-outline toggle-locrit"
+                                        data-locrit="{{ locrit.name }}"
+                                        title="{% if locrit.active %}Désactiver{% else %}Activer{% endif %}">
+                                    {% if locrit.active %}⏹️{% else %}▶️{% endif %}
+                                </button>
+                                <a href="{{ url_for('edit_locrit', locrit_name=locrit.name) }}"
+                                   class="btn btn-sm btn-outline"
+                                   title="Éditer">
+                                    ⚙️
+                                </a>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="text-center text-muted" style="padding: 2rem;">
+            <p>🏠 Aucun Locrit configuré</p>
+            <p>Commencez par créer votre premier Locrit !</p>
+            <a href="{{ url_for('create_locrit') }}" class="btn btn-primary mt-3">
+                ➕ Créer mon premier Locrit
+            </a>
+        </div>
+    {% endif %}
+</div>
+
+<!-- Informations système -->
+<div class="card mt-4">
+    <div class="card-header">
+        <h3 class="card-title">Statut du système</h3>
+    </div>
+    <div class="d-flex justify-content-between align-items-center">
+        <div>
+            <span class="badge badge-success">🟢 Interface Web</span>
+            <span class="text-muted ml-2">Opérationnelle</span>
+        </div>
+        <div>
+            <a href="{{ url_for('app_config') }}" class="btn btn-outline btn-sm">
+                ⚙️ Configuration
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Toggle Locrit status
+document.querySelectorAll('.toggle-locrit').forEach(button => {
+    button.addEventListener('click', async function() {
+        const locritName = this.dataset.locrit;
+        const originalText = this.innerHTML;
+
+        try {
+            this.disabled = true;
+            this.innerHTML = '⏳';
+
+            const response = await fetch(`/locrits/${encodeURIComponent(locritName)}/toggle`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                }
+            });
+
+            const result = await response.json();
+
+            if (result.success) {
+                // Recharger la page pour mettre à jour l'affichage
+                window.location.reload();
+            } else {
+                alert('Erreur: ' + (result.error || 'Erreur inconnue'));
+                this.innerHTML = originalText;
+                this.disabled = false;
+            }
+        } catch (error) {
+            console.error('Erreur:', error);
+            alert('Erreur de connexion');
+            this.innerHTML = originalText;
+            this.disabled = false;
+        }
+    });
+});
+</script>
+{% endblock %}

@@ -1,0 +1,326 @@
+{% extends "base.html" %}
+
+{% block title %}Éditer {{ locrit_name }} - Locrit{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>⚙️ Éditer {{ locrit_name }}</h1>
+    <a href="{{ url_for('locrits_list') }}" class="btn btn-outline">
+        ← Retour à la liste
+    </a>
+</div>
+
+<form method="POST" class="container-sm">
+    <!-- Informations générales -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <h3 class="card-title">📝 Informations générales</h3>
+                <div>
+                    {% if settings.active %}
+                        <span class="badge badge-success">🟢 Actif</span>
+                    {% else %}
+                        <span class="badge badge-danger">🔴 Inactif</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="description" class="form-label">Description *</label>
+            <textarea id="description"
+                      name="description"
+                      class="form-control form-textarea"
+                      placeholder="Décrivez le rôle et les capacités de ce Locrit..."
+                      required>{{ settings.description }}</textarea>
+            <small class="text-muted">Une description claire aide à comprendre le rôle du Locrit.</small>
+        </div>
+
+        <div class="form-group">
+            <label for="model" class="form-label">Modèle Ollama *</label>
+            <div class="d-flex gap-2 align-items-end">
+                <div style="flex: 1;">
+                    <select id="model_select" class="form-control mb-2" style="display: none;">
+                        <option value="">⏳ Chargement des modèles...</option>
+                    </select>
+                    <input type="text"
+                           id="model"
+                           name="model"
+                           class="form-control"
+                           placeholder="llama3.2"
+                           required
+                           value="{{ settings.ollama_model }}">
+                    <small class="text-muted">Sélectionnez un modèle depuis la liste ou saisissez manuellement.</small>
+                </div>
+                <button type="button" id="refreshModels" class="btn btn-outline" style="height: fit-content;">
+                    🔄
+                </button>
+            </div>
+            <div id="model_status" class="mt-2" style="display: none;">
+                <small class="text-muted">⏳ Chargement des modèles disponibles...</small>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label for="public_address" class="form-label">Adresse publique</label>
+            <input type="text"
+                   id="public_address"
+                   name="public_address"
+                   class="form-control"
+                   placeholder="mon-locrit.localhost.run"
+                   value="{{ settings.public_address or '' }}">
+            <small class="text-muted">Optionnel. Adresse pour accéder au Locrit depuis l'extérieur.</small>
+        </div>
+    </div>
+
+    <!-- Paramètres d'accès -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="card-title">🔐 Ouvert à</h3>
+            <p class="card-subtitle">Qui peut se connecter à ce Locrit ?</p>
+        </div>
+
+        <div class="form-check">
+            <input type="checkbox" id="humans" name="humans" {% if settings.open_to.humans %}checked{% endif %}>
+            <label for="humans" class="form-label">👥 Humains</label>
+            <small class="text-muted d-block">Permettre aux utilisateurs humains de se connecter</small>
+        </div>
+
+        <div class="form-check">
+            <input type="checkbox" id="locrits" name="locrits" {% if settings.open_to.locrits %}checked{% endif %}>
+            <label for="locrits" class="form-label">🤖 Autres Locrits</label>
+            <small class="text-muted d-block">Permettre aux autres Locrits de se connecter</small>
+        </div>
+
+        <div class="form-check">
+            <input type="checkbox" id="invitations" name="invitations" {% if settings.open_to.invitations %}checked{% endif %}>
+            <label for="invitations" class="form-label">📧 Invitations</label>
+            <small class="text-muted d-block">Accepter les invitations externes</small>
+        </div>
+
+        <div class="form-check">
+            <input type="checkbox" id="internet" name="internet" {% if settings.open_to.internet %}checked{% endif %}>
+            <label for="internet" class="form-label">🌐 Internet</label>
+            <small class="text-muted d-block">Accès autonome à Internet (expérimental)</small>
+        </div>
+
+        <div class="form-check">
+            <input type="checkbox" id="platform" name="platform" {% if settings.open_to.platform %}checked{% endif %}>
+            <label for="platform" class="form-label">🏢 Plateforme</label>
+            <small class="text-muted d-block">Interactions avec la plateforme Locrit</small>
+        </div>
+    </div>
+
+    <!-- Accès aux données -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="card-title">📊 Accès aux données</h3>
+            <p class="card-subtitle">Quelles données ce Locrit peut-il consulter ?</p>
+        </div>
+
+        <div class="form-check">
+            <input type="checkbox" id="logs" name="logs" {% if settings.access_to.logs %}checked{% endif %}>
+            <label for="logs" class="form-label">📝 Logs système</label>
+            <small class="text-muted d-block">Accès aux journaux d'activité du système</small>
+        </div>
+
+        <div class="form-check">
+            <input type="checkbox" id="quick_memory" name="quick_memory" {% if settings.access_to.quick_memory %}checked{% endif %}>
+            <label for="quick_memory" class="form-label">🧠 Mémoire rapide</label>
+            <small class="text-muted d-block">Accès à la mémoire de conversation récente</small>
+        </div>
+
+        <div class="form-check">
+            <input type="checkbox" id="full_memory" name="full_memory" {% if settings.access_to.full_memory %}checked{% endif %}>
+            <label for="full_memory" class="form-label">🗄️ Mémoire complète</label>
+            <small class="text-muted d-block">Accès à toute la mémoire historique (sensible)</small>
+        </div>
+
+        <div class="form-check">
+            <input type="checkbox" id="llm_info" name="llm_info" {% if settings.access_to.llm_info %}checked{% endif %}>
+            <label for="llm_info" class="form-label">🤖 Informations LLM</label>
+            <small class="text-muted d-block">Accès aux métadonnées du modèle de langage</small>
+        </div>
+    </div>
+
+    <!-- Informations de métadonnées -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="card-title">📅 Métadonnées</h3>
+        </div>
+        <div class="d-flex gap-4">
+            <div>
+                <strong>Créé:</strong><br>
+                <span class="text-muted">{{ settings.created_at[:19] if settings.created_at else 'N/A' }}</span>
+            </div>
+            <div>
+                <strong>Dernière modification:</strong><br>
+                <span class="text-muted">{{ settings.updated_at[:19] if settings.updated_at else 'N/A' }}</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="d-flex gap-2 justify-content-between">
+        <div>
+            <button type="button" id="resetForm" class="btn btn-warning">
+                🔄 Restaurer
+            </button>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{{ url_for('locrits_list') }}" class="btn btn-outline">
+                Annuler
+            </a>
+            <button type="submit" class="btn btn-success">
+                💾 Sauvegarder
+            </button>
+        </div>
+    </div>
+</form>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Valeurs originales pour la restauration
+const originalValues = {
+    description: {{ settings.description | tojson }},
+    model: {{ settings.ollama_model | tojson }},
+    public_address: {{ settings.public_address | tojson or '""' }},
+    open_to: {{ settings.open_to | tojson }},
+    access_to: {{ settings.access_to | tojson }}
+};
+
+// Validation du formulaire
+document.querySelector('form').addEventListener('submit', function(e) {
+    const description = document.getElementById('description').value.trim();
+    const model = document.getElementById('model').value.trim();
+
+    if (!description) {
+        e.preventDefault();
+        alert('La description est obligatoire.');
+        document.getElementById('description').focus();
+        return;
+    }
+
+    if (!model) {
+        e.preventDefault();
+        alert('Le modèle Ollama est obligatoire.');
+        document.getElementById('model').focus();
+        return;
+    }
+
+    // Désactiver le bouton de soumission
+    const submitBtn = this.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '⏳ Sauvegarde en cours...';
+});
+
+// Restaurer les valeurs originales
+document.getElementById('resetForm').addEventListener('click', function() {
+    if (confirm('Êtes-vous sûr de vouloir restaurer les valeurs originales ? Les modifications non sauvegardées seront perdues.')) {
+        // Restaurer les champs texte
+        document.getElementById('description').value = originalValues.description;
+        document.getElementById('model').value = originalValues.model;
+        document.getElementById('public_address').value = originalValues.public_address || '';
+
+        // Restaurer les checkboxes open_to
+        document.getElementById('humans').checked = originalValues.open_to.humans;
+        document.getElementById('locrits').checked = originalValues.open_to.locrits;
+        document.getElementById('invitations').checked = originalValues.open_to.invitations;
+        document.getElementById('internet').checked = originalValues.open_to.internet;
+        document.getElementById('platform').checked = originalValues.open_to.platform;
+
+        // Restaurer les checkboxes access_to
+        document.getElementById('logs').checked = originalValues.access_to.logs;
+        document.getElementById('quick_memory').checked = originalValues.access_to.quick_memory;
+        document.getElementById('full_memory').checked = originalValues.access_to.full_memory;
+        document.getElementById('llm_info').checked = originalValues.access_to.llm_info;
+
+        alert('Formulaire restauré aux valeurs originales.');
+    }
+});
+
+// Auto-focus sur le champ description
+document.getElementById('description').focus();
+
+// Gestion des modèles Ollama
+const modelInput = document.getElementById('model');
+const modelSelect = document.getElementById('model_select');
+const modelStatus = document.getElementById('model_status');
+const refreshButton = document.getElementById('refreshModels');
+
+// Fonction pour charger les modèles disponibles
+async function loadOllamaModels() {
+    try {
+        modelStatus.style.display = 'block';
+        modelStatus.innerHTML = '<small class="text-muted">⏳ Chargement des modèles disponibles...</small>';
+
+        const response = await fetch('/api/ollama/models');
+        const result = await response.json();
+
+        if (result.success && result.models.length > 0) {
+            // Vider la liste existante
+            modelSelect.innerHTML = '<option value="">-- Sélectionnez un modèle --</option>';
+
+            // Ajouter les modèles disponibles
+            result.models.forEach(model => {
+                const option = document.createElement('option');
+                option.value = model.name;
+                option.textContent = model.name;
+                if (model.name === modelInput.value) {
+                    option.selected = true;
+                }
+                modelSelect.appendChild(option);
+            });
+
+            // Afficher la liste déroulante
+            modelSelect.style.display = 'block';
+            modelStatus.innerHTML = `<small class="text-success">✅ ${result.models.length} modèles chargés</small>`;
+
+        } else {
+            modelStatus.innerHTML = '<small class="text-warning">⚠️ Aucun modèle trouvé. Vérifiez la connexion Ollama.</small>';
+        }
+
+    } catch (error) {
+        console.error('Erreur lors du chargement des modèles:', error);
+        modelStatus.innerHTML = '<small class="text-danger">❌ Erreur lors du chargement. Saisie manuelle disponible.</small>';
+    }
+}
+
+// Gestion de la sélection d'un modèle
+modelSelect.addEventListener('change', function() {
+    if (this.value) {
+        modelInput.value = this.value;
+    }
+});
+
+// Bouton de rafraîchissement
+refreshButton.addEventListener('click', function() {
+    this.disabled = true;
+    this.innerHTML = '⏳';
+    loadOllamaModels().finally(() => {
+        this.disabled = false;
+        this.innerHTML = '🔄';
+    });
+});
+
+// Charger les modèles au chargement de la page
+window.addEventListener('load', function() {
+    // Petit délai pour que la page soit complètement chargée
+    setTimeout(loadOllamaModels, 500);
+});
+
+// Avertissement pour les modifications sensibles
+document.getElementById('full_memory').addEventListener('change', function() {
+    if (this.checked) {
+        alert('⚠️ Attention: L\'accès à la mémoire complète donne accès à tout l\'historique. Utilisez avec précaution.');
+    }
+});
+
+document.getElementById('internet').addEventListener('change', function() {
+    if (this.checked) {
+        alert('⚠️ Attention: L\'accès autonome à Internet est expérimental et peut présenter des risques de sécurité.');
+    }
+});
+</script>
+{% endblock %}

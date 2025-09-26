@@ -1,0 +1,428 @@
+{% extends "base.html" %}
+
+{% block title %}Configuration - Locrit{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>⚙️ Configuration de l'application</h1>
+    <a href="{{ url_for('dashboard') }}" class="btn btn-outline">
+        ← Retour au tableau de bord
+    </a>
+</div>
+
+<form method="POST" action="/config/save" class="container-sm">
+    <!-- Configuration Ollama -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="card-title">🤖 Configuration Ollama</h3>
+            <p class="card-subtitle">Paramètres de connexion au serveur Ollama</p>
+        </div>
+
+        <div class="form-group">
+            <label for="ollama_base_url" class="form-label">URL du serveur Ollama</label>
+            <div class="d-flex gap-2 align-items-end mb-2">
+                <div style="flex: 1;">
+                    <input type="url"
+                           id="ollama_base_url"
+                           name="ollama_base_url"
+                           class="form-control"
+                           placeholder="http://localhost:11434"
+                           value="{{ config.ollama.base_url if config.ollama else 'http://localhost:11434' }}">
+                </div>
+                <button type="button" id="testConnection" class="btn btn-warning" style="height: fit-content;">
+                    🔍 Tester
+                </button>
+            </div>
+            <div class="d-flex gap-1 flex-wrap mb-2">
+                <small class="text-muted">Adresses courantes : </small>
+                <button type="button" class="btn btn-sm btn-outline quick-url" data-url="http://localhost:11434">Localhost</button>
+                <button type="button" class="btn btn-sm btn-outline quick-url" data-url="http://127.0.0.1:11434">127.0.0.1</button>
+                <button type="button" class="btn btn-sm btn-outline quick-url" data-url="http://192.168.1.100:11434">LAN (.100)</button>
+            </div>
+            <small class="text-muted">URL complète du serveur Ollama (inclut le protocole et le port)</small>
+        </div>
+
+        <div class="form-group">
+            <label for="ollama_default_model" class="form-label">Modèle par défaut</label>
+            <input type="text"
+                   id="ollama_default_model"
+                   name="ollama_default_model"
+                   class="form-control"
+                   placeholder="llama3.2"
+                   value="{{ config.ollama.default_model if config.ollama else 'llama3.2' }}">
+            <small class="text-muted">Modèle utilisé par défaut pour les nouveaux Locrits</small>
+        </div>
+
+        <div class="form-group">
+            <label for="ollama_timeout" class="form-label">Timeout (secondes)</label>
+            <input type="number"
+                   id="ollama_timeout"
+                   name="ollama_timeout"
+                   class="form-control"
+                   min="5"
+                   max="300"
+                   value="{{ config.ollama.timeout if config.ollama else 30 }}">
+            <small class="text-muted">Délai d'attente pour les requêtes vers Ollama</small>
+        </div>
+    </div>
+
+    <!-- Configuration Réseau -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="card-title">🌐 Configuration Réseau</h3>
+            <p class="card-subtitle">Paramètres du serveur API et de la connectivité</p>
+        </div>
+
+        <div class="form-group">
+            <label for="api_host" class="form-label">Adresse d'écoute API</label>
+            <input type="text"
+                   id="api_host"
+                   name="api_host"
+                   class="form-control"
+                   placeholder="0.0.0.0"
+                   value="{{ config.network.api_server.host if config.network and config.network.api_server else '0.0.0.0' }}">
+            <small class="text-muted">Adresse IP d'écoute du serveur API (0.0.0.0 pour toutes les interfaces)</small>
+        </div>
+
+        <div class="form-group">
+            <label for="api_port" class="form-label">Port API</label>
+            <input type="number"
+                   id="api_port"
+                   name="api_port"
+                   class="form-control"
+                   min="1024"
+                   max="65535"
+                   value="{{ config.network.api_server.port if config.network and config.network.api_server else 8000 }}">
+            <small class="text-muted">Port d'écoute du serveur API</small>
+        </div>
+    </div>
+
+    <!-- Configuration Interface -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="card-title">🎨 Configuration Interface</h3>
+            <p class="card-subtitle">Paramètres d'affichage et d'expérience utilisateur</p>
+        </div>
+
+        <div class="form-group">
+            <label for="ui_theme" class="form-label">Thème</label>
+            <select id="ui_theme" name="ui_theme" class="form-control">
+                <option value="dark" {% if config.ui and config.ui.theme == 'dark' %}selected{% endif %}>🌙 Sombre</option>
+                <option value="light" {% if config.ui and config.ui.theme == 'light' %}selected{% endif %}>☀️ Clair</option>
+                <option value="auto" {% if config.ui and config.ui.theme == 'auto' %}selected{% endif %}>🔄 Automatique</option>
+            </select>
+            <small class="text-muted">Thème de couleur de l'interface utilisateur</small>
+        </div>
+
+        <div class="form-group">
+            <label for="refresh_interval" class="form-label">Intervalle de rafraîchissement (secondes)</label>
+            <input type="number"
+                   id="refresh_interval"
+                   name="refresh_interval"
+                   class="form-control"
+                   min="1"
+                   max="60"
+                   value="{{ config.ui.refresh_interval if config.ui else 5 }}">
+            <small class="text-muted">Fréquence de mise à jour automatique des données</small>
+        </div>
+    </div>
+
+    <!-- Configuration Mémoire -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="card-title">🧠 Configuration Mémoire</h3>
+            <p class="card-subtitle">Paramètres de stockage et de mémoire (lecture seule)</p>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Base de données</label>
+            <input type="text"
+                   class="form-control"
+                   value="{{ config.memory.database_path if config.memory else 'data/locrit_memory.db' }}"
+                   readonly>
+            <small class="text-muted">Chemin vers la base de données de mémoire (non modifiable via l'interface)</small>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Messages maximum</label>
+            <input type="number"
+                   class="form-control"
+                   value="{{ config.memory.max_messages if config.memory else 10000 }}"
+                   readonly>
+            <small class="text-muted">Nombre maximum de messages en mémoire (non modifiable via l'interface)</small>
+        </div>
+
+        <div class="form-group">
+            <label class="form-label">Modèle d'embedding</label>
+            <input type="text"
+                   class="form-control"
+                   value="{{ config.memory.embedding_model if config.memory else 'all-MiniLM-L6-v2' }}"
+                   readonly>
+            <small class="text-muted">Modèle utilisé pour les embeddings (non modifiable via l'interface)</small>
+        </div>
+    </div>
+
+    <!-- Statut du système -->
+    <div class="card mb-4">
+        <div class="card-header">
+            <h3 class="card-title">📊 Statut du système</h3>
+        </div>
+
+        <div class="d-flex gap-4">
+            <div class="stat-card" style="flex: 1;">
+                <div class="stat-number text-success">🟢</div>
+                <div class="stat-label">Interface Web</div>
+            </div>
+
+            <div class="stat-card" style="flex: 1;">
+                <div class="stat-number" id="ollama-status">❓</div>
+                <div class="stat-label">Serveur Ollama</div>
+            </div>
+
+            <div class="stat-card" style="flex: 1;">
+                <div class="stat-number text-primary">📁</div>
+                <div class="stat-label">Configuration</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions -->
+    <div class="d-flex gap-2 justify-content-between">
+        <div>
+            <button type="button" id="resetConfig" class="btn btn-outline">
+                🔄 Valeurs par défaut
+            </button>
+        </div>
+        <div>
+            <button type="submit" class="btn btn-success">
+                💾 Sauvegarder la configuration
+            </button>
+        </div>
+    </div>
+</form>
+
+<!-- Modal de test de connexion -->
+<div id="testModal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 1000;">
+    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: white; padding: 2rem; border-radius: 0.5rem; min-width: 400px;">
+        <h3>Test de connexion Ollama</h3>
+        <div id="testResults" style="margin: 1rem 0; padding: 1rem; background: #f8fafc; border-radius: 0.375rem;">
+            <p>⏳ Test en cours...</p>
+        </div>
+        <div class="text-right">
+            <button id="closeTestModal" class="btn btn-primary">Fermer</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Test de connexion Ollama (côté serveur)
+document.getElementById('testConnection').addEventListener('click', async function() {
+    const modal = document.getElementById('testModal');
+    const results = document.getElementById('testResults');
+
+    modal.style.display = 'block';
+    results.innerHTML = '<p>⏳ Test de connexion en cours...</p>';
+
+    const ollamaUrl = document.getElementById('ollama_base_url').value || 'http://localhost:11434';
+    console.log('URL à tester (côté client):', ollamaUrl);
+
+    try {
+        // Test via le serveur Python avec l'URL actuelle
+        const response = await fetch('/config/test-ollama', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                base_url: ollamaUrl
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            results.innerHTML = `
+                <div class="alert alert-success">
+                    <h4>✅ Connexion réussie !</h4>
+                    <p><strong>URL testée:</strong> ${result.tested_url || ollamaUrl}</p>
+                    <p><strong>Modèles disponibles:</strong> ${result.total_models || 0}</p>
+                    ${result.models && result.models.length > 0 ?
+                        `<ul>${result.models.map(m => `<li>${typeof m === 'string' ? m : m.name}</li>`).join('')}</ul>` : ''}
+                    ${result.total_models > 5 ? `<p><em>... et ${result.total_models - 5} autres modèles</em></p>` : ''}
+                </div>
+            `;
+
+            // Mettre à jour le statut
+            updateOllamaStatus('connected');
+        } else {
+            throw new Error(result.error || 'Erreur de connexion inconnue');
+        }
+    } catch (error) {
+        let errorDetails = '';
+        let testedUrl = ollamaUrl;
+
+        // Essayer de récupérer plus d'infos de l'erreur du serveur
+        try {
+            const errorResponse = await error.response?.json();
+            if (errorResponse) {
+                testedUrl = errorResponse.tested_url || ollamaUrl;
+                if (errorResponse.technical_details) {
+                    errorDetails = `<p><strong>Détails techniques:</strong> ${errorResponse.technical_details}</p>`;
+                } else {
+                    errorDetails = `<p><strong>Erreur:</strong> ${errorResponse.error}</p>`;
+                }
+            }
+        } catch {
+            // Fallback vers analyse basique du message d'erreur
+            if (error.message.includes('Failed to fetch')) {
+                errorDetails = '<p><strong>Cause probable:</strong> Serveur Ollama non démarré ou URL incorrecte</p><p><strong>Solutions:</strong></p><ul><li>Vérifiez que Ollama est installé et démarré</li><li>Testez l\'URL dans votre navigateur</li><li>Vérifiez que le port 11434 est ouvert</li></ul>';
+            } else if (error.message.includes('NetworkError')) {
+                errorDetails = '<p><strong>Cause probable:</strong> Problème réseau</p><p><strong>Solutions:</strong></p><ul><li>Vérifiez votre connexion réseau</li><li>Testez avec une autre adresse (localhost, 127.0.0.1)</li></ul>';
+            } else {
+                errorDetails = `<p><strong>Détails techniques:</strong> ${error.message}</p>`;
+            }
+        }
+
+        results.innerHTML = `
+            <div class="alert alert-error">
+                <h4>❌ Connexion échouée</h4>
+                <p><strong>URL testée:</strong> ${testedUrl}</p>
+                ${errorDetails}
+                <p><em>Astuce: Vérifiez que Ollama est démarré avec la commande "ollama serve"</em></p>
+            </div>
+        `;
+
+        // Mettre à jour le statut
+        updateOllamaStatus('disconnected');
+    }
+});
+
+// Fermer le modal de test
+document.getElementById('closeTestModal').addEventListener('click', function() {
+    document.getElementById('testModal').style.display = 'none';
+});
+
+// Fermer le modal en cliquant à l'extérieur
+document.getElementById('testModal').addEventListener('click', function(e) {
+    if (e.target === this) {
+        this.style.display = 'none';
+    }
+});
+
+// Reset configuration
+document.getElementById('resetConfig').addEventListener('click', function() {
+    if (confirm('Êtes-vous sûr de vouloir restaurer les valeurs par défaut ? Les modifications non sauvegardées seront perdues.')) {
+        // Valeurs par défaut
+        document.getElementById('ollama_base_url').value = 'http://localhost:11434';
+        document.getElementById('ollama_default_model').value = 'llama3.2';
+        document.getElementById('ollama_timeout').value = '30';
+        document.getElementById('api_host').value = '0.0.0.0';
+        document.getElementById('api_port').value = '8000';
+        document.getElementById('ui_theme').value = 'dark';
+        document.getElementById('refresh_interval').value = '5';
+
+        alert('Configuration restaurée aux valeurs par défaut.');
+    }
+});
+
+// Gestion des boutons d'adresses rapides
+document.querySelectorAll('.quick-url').forEach(button => {
+    button.addEventListener('click', function() {
+        const url = this.getAttribute('data-url');
+        document.getElementById('ollama_base_url').value = url;
+
+        // Mettre en surbrillance le bouton actif
+        document.querySelectorAll('.quick-url').forEach(btn => btn.classList.remove('btn-primary'));
+        this.classList.add('btn-primary');
+    });
+});
+
+// Validation du formulaire avec meilleurs messages d'erreur
+document.querySelector('form').addEventListener('submit', function(e) {
+    const ollamaUrl = document.getElementById('ollama_base_url').value.trim();
+    const apiPort = parseInt(document.getElementById('api_port').value);
+    let hasErrors = false;
+    let errorMessage = '';
+
+    // Validation de l'URL Ollama
+    try {
+        const url = new URL(ollamaUrl);
+        if (!['http:', 'https:'].includes(url.protocol)) {
+            throw new Error('Protocole non supporté');
+        }
+    } catch (error) {
+        hasErrors = true;
+        errorMessage += '• L\'URL du serveur Ollama n\'est pas valide. Utilisez le format: http://adresse:port\n';
+    }
+
+    // Validation du port API
+    if (isNaN(apiPort) || apiPort < 1024 || apiPort > 65535) {
+        hasErrors = true;
+        errorMessage += '• Le port API doit être entre 1024 et 65535\n';
+    }
+
+    if (hasErrors) {
+        e.preventDefault();
+        alert('Erreurs de validation:\n' + errorMessage);
+        if (ollamaUrl === '' || !ollamaUrl) {
+            document.getElementById('ollama_base_url').focus();
+        } else if (isNaN(apiPort)) {
+            document.getElementById('api_port').focus();
+        }
+        return;
+    }
+
+    // Désactiver le bouton de soumission
+    const submitBtn = this.querySelector('button[type="submit"]');
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = '⏳ Sauvegarde en cours...';
+});
+
+// Fonction utilitaire pour mettre à jour le statut Ollama
+function updateOllamaStatus(status) {
+    const statusElement = document.getElementById('ollama-status');
+    if (status === 'connected') {
+        statusElement.innerHTML = '🟢';
+        statusElement.className = 'stat-number text-success';
+    } else if (status === 'disconnected') {
+        statusElement.innerHTML = '🔴';
+        statusElement.className = 'stat-number text-danger';
+    } else {
+        statusElement.innerHTML = '❓';
+        statusElement.className = 'stat-number text-warning';
+    }
+}
+
+// Test automatique de la connexion Ollama au chargement (côté serveur)
+window.addEventListener('load', function() {
+    // Petit délai pour que la page soit complètement chargée
+    setTimeout(async function() {
+        try {
+            const response = await fetch('/api/ollama/status');
+            const result = await response.json();
+
+            if (result.success && result.status === 'connected') {
+                updateOllamaStatus('connected');
+            } else {
+                updateOllamaStatus('disconnected');
+            }
+        } catch (error) {
+            console.warn('Impossible de vérifier le statut Ollama:', error);
+            updateOllamaStatus('disconnected');
+        }
+    }, 1000);
+});
+
+// Met en surbrillance le bouton d'adresse active au chargement
+window.addEventListener('load', function() {
+    const currentUrl = document.getElementById('ollama_base_url').value;
+    document.querySelectorAll('.quick-url').forEach(button => {
+        if (button.getAttribute('data-url') === currentUrl) {
+            button.classList.add('btn-primary');
+        }
+    });
+});
+</script>
+{% endblock %}

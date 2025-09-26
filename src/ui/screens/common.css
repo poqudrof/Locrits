@@ -1,0 +1,73 @@
+/* 
+Styles CSS communs pour tous les écrans Locrit
+Résout les problèmes de scroll vertical et de layout
+*/
+
+/* Configuration globale pour tous les écrans */
+Screen {
+    layout: vertical;
+    overflow-y: auto;
+    scrollbar-size: 1 1;
+    scrollbar-size-horizontal: 0 1;
+    scrollbar-size-vertical: 1 0;
+}
+
+/* Conteneurs principaux */
+.main-container, .settings-container, .local-container, .create-container, .chat-container {
+    height: auto;
+    min-height: 100vh;
+    layout: vertical;
+    overflow-y: auto;
+}
+
+/* Sections avec hauteur flexible */
+.content-section {
+    height: auto;
+    max-height: 70vh;
+    overflow-y: auto;
+}
+
+/* Conteneurs de formulaires */
+.form-section, .settings-section, .auth-section {
+    height: auto;
+    margin: 1 0;
+    padding: 1;
+}
+
+/* Zone de boutons d'actions (toujours en bas) */
+.actions, .auth-buttons {
+    height: auto;
+    min-height: 3;
+    margin-top: 1;
+}
+
+/* Messages et statuts */
+.message-display, .status-display {
+    height: auto;
+    max-height: 10;
+    word-wrap: break-word;
+}
+
+/* Liste d'éléments scrollable */
+.scrollable-list {
+    height: auto;
+    max-height: 50vh;
+    overflow-y: auto;
+    border: solid $secondary;
+}
+
+/* Amélioration du scroll pour les petits écrans */
+@media (max-height: 600px) {
+    .main-container, .settings-container, .local-container, .create-container {
+        min-height: auto;
+        height: auto;
+    }
+    
+    .content-section {
+        max-height: 40vh;
+    }
+    
+    .scrollable-list {
+        max-height: 30vh;
+    }
+}

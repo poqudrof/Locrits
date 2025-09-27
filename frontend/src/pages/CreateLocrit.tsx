@@ -15,16 +15,16 @@ const formSchema = z.object({
   model: z.string().min(1, 'Le modèle est obligatoire'),
   publicAddress: z.string().optional(),
   // Open to permissions
-  humans: z.boolean().default(true),
-  locrits: z.boolean().default(true),
-  invitations: z.boolean().default(true),
-  internet: z.boolean().default(false),
-  platform: z.boolean().default(false),
+  humans: z.boolean(),
+  locrits: z.boolean(),
+  invitations: z.boolean(),
+  internet: z.boolean(),
+  platform: z.boolean(),
   // Access permissions
-  logs: z.boolean().default(true),
-  quickMemory: z.boolean().default(true),
-  fullMemory: z.boolean().default(false),
-  llmInfo: z.boolean().default(true),
+  logs: z.boolean(),
+  quickMemory: z.boolean(),
+  fullMemory: z.boolean(),
+  llmInfo: z.boolean(),
 })
 
 type FormData = z.infer<typeof formSchema>
@@ -42,7 +42,10 @@ export default function CreateLocrit() {
   } = useForm<FormData>({
     resolver: zodResolver(formSchema),
     defaultValues: {
+      name: '',
+      description: '',
       model: 'llama3.2',
+      publicAddress: '',
       humans: true,
       locrits: true,
       invitations: true,
@@ -59,16 +62,42 @@ export default function CreateLocrit() {
     setIsLoading(true)
 
     try {
-      // Mock API call - replace with actual backend call
-      console.log('Creating Locrit:', data)
+      const response = await fetch('http://localhost:5000/api/create-locrit', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: data.name,
+          description: data.description,
+          model: data.model,
+          public_address: data.publicAddress || '',
+          humans: data.humans,
+          locrits: data.locrits,
+          invitations: data.invitations,
+          internet: data.internet,
+          platform: data.platform,
+          logs: data.logs,
+          quick_memory: data.quickMemory,
+          full_memory: data.fullMemory,
+          llm_info: data.llmInfo,
+        })
+      })
 
-      // Simulate API delay
-      await new Promise(resolve => setTimeout(resolve, 1000))
-
-      toast.success('Locrit créé avec succès!')
-      navigate('/my-locrits')
+      if (response.ok) {
+        const result = await response.json()
+        if (result.success) {
+          toast.success(result.message)
+          navigate('/my-locrits')
+        } else {
+          throw new Error(result.error || 'Failed to create Locrit')
+        }
+      } else {
+        throw new Error('Failed to create Locrit')
+      }
     } catch (error) {
       toast.error('Erreur lors de la création du Locrit')
+      console.error('Error creating Locrit:', error)
     } finally {
       setIsLoading(false)
     }

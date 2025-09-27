@@ -6,7 +6,7 @@ Gère la configuration YAML, les variables d'environnement et les sauvegardes
 import os
 import yaml
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 from typing import Dict, List, Optional, Any
 from dotenv import load_dotenv
@@ -15,13 +15,6 @@ from dotenv import load_dotenv
 load_dotenv()
 
 logger = logging.getLogger(__name__)
-
-import os
-import yaml
-import logging
-from datetime import datetime, timezone
-from typing import Dict, Any, Optional
-from pathlib import Path
 
 
 class ConfigService:
@@ -362,6 +355,10 @@ class ConfigService:
     def reload_config(self) -> None:
         """Recharge la configuration depuis le fichier"""
         self._load_config()
+
+    def get_locrits_config(self) -> Dict[str, Any]:
+        """Retourne la configuration complète des Locrits"""
+        return self.get('locrits', {})
 
 
 # Instance globale du service de configuration

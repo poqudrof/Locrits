@@ -1,9 +1,41 @@
-import { Link } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Link, useNavigate } from 'react-router-dom'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 
 export default function Dashboard() {
+  const navigate = useNavigate()
+  const [locrits, setLocrits] = useState<any[]>([])
+
+  // Load Locrits data from API
+  const loadLocrits = async () => {
+    try {
+      const response = await fetch('http://localhost:5000/api/locrits')
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success && data.locrits) {
+          const locritsArray = Object.entries(data.locrits.instances || [])
+          setLocrits(locritsArray.slice(0, 3)) // Show only first 3 for dashboard
+        }
+      } else {
+        console.warn('Failed to load Locrits configuration')
+      }
+    } catch (error) {
+      console.error('Error loading Locrits configuration:', error)
+    }
+  }
+
+  // Load data on component mount
+  useEffect(() => {
+    loadLocrits()
+  }, [])
+
+  const handleConfigureLocrit = (locritName: string) => {
+    // Navigate to MyLocrits page with query parameter to auto-open edit mode
+    navigate(`/my-locrits?edit=${encodeURIComponent(locritName)}`)
+  }
+
   // Mock data - replace with actual API calls
   const stats = {
     totalLocrits: 3,
@@ -11,26 +43,6 @@ export default function Dashboard() {
     inactiveLocrits: 1
   }
 
-  const recentLocrits = [
-    {
-      name: 'Pixie Assistant',
-      description: 'Assistant général pour les tâches quotidiennes',
-      active: true,
-      model: 'llama3.2'
-    },
-    {
-      name: 'Expert Technique',
-      description: 'Spécialisé dans le développement et la programmation',
-      active: true,
-      model: 'codellama'
-    },
-    {
-      name: 'Analyste Data',
-      description: 'Aide à l\'analyse de données et statistiques',
-      active: false,
-      model: 'llama3.1'
-    }
-  ]
 
   return (
     <div className="space-y-6">
@@ -107,36 +119,41 @@ export default function Dashboard() {
           </div>
         </CardHeader>
         <CardContent>
-          {recentLocrits.length > 0 ? (
+          {locrits.length > 0 ? (
             <div className="space-y-4">
-              {recentLocrits.map((locrit, index) => (
-                <div key={index} className="flex items-center justify-between p-4 rounded-lg border">
+              {locrits.map(([locritName, settings]) => (
+                <div key={locritName} className="flex items-center justify-between p-4 rounded-lg border">
                   <div className="flex items-center space-x-4">
                     <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
                       <span className="text-xl">🤖</span>
                     </div>
                     <div>
                       <div className="flex items-center space-x-2">
-                        <h3 className="font-medium">{locrit.name}</h3>
-                        <Badge variant={locrit.active ? 'default' : 'secondary'}>
-                          {locrit.active ? '🟢 Actif' : '🔴 Inactif'}
+                        <h3 className="font-medium">{locritName}</h3>
+                        <Badge variant={settings.active ? 'default' : 'secondary'}>
+                          {settings.active ? '🟢 Actif' : '🔴 Inactif'}
                         </Badge>
                       </div>
                       <p className="text-sm text-muted-foreground">
-                        {locrit.description}
+                        {settings.description}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        Modèle: {locrit.model}
+                        Modèle: {settings.ollama_model}
                       </p>
                     </div>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <Link to={`/chat/${locrit.name}`}>
-                      <Button variant="outline" size="sm" disabled={!locrit.active}>
+                    <Link to={`/chat/${locritName}`}>
+                      <Button variant="outline" size="sm" disabled={!settings.active}>
                         💬 Chat
                       </Button>
                     </Link>
-                    <Button variant="ghost" size="sm">
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => handleConfigureLocrit(locritName)}
+                      title="Configurer ce Locrit"
+                    >
                       ⚙️
                     </Button>
                   </div>

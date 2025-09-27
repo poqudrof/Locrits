@@ -34,9 +34,9 @@ locrits:
   instances:
     Bob Technique:
       access_to:
-        full_memory: false
+        full_memory: true
         llm_info: false
-        logs: false
+        logs: true
         quick_memory: true
       active: true
       created_at: '2025-09-13T14:29:07.098618'
@@ -49,7 +49,7 @@ locrits:
         locrits: true
         platform: false
       public_address: bob.dev.local
-      updated_at: '2025-09-18T15:30:12.248480+00:00'
+      updated_at: '2025-09-27T12:18:00.658060+00:00'
     Locrit root:
       access_to:
         full_memory: false
@@ -58,7 +58,7 @@ locrits:
         quick_memory: true
       active: false
       created_at: '2025-09-14T18:57:16.743340'
-      description: Le premire locrit
+      description: Le premire locrit !
       ollama_model: llama3.1:8b-instruct-q3_K_M
       open_to:
         humans: true
@@ -67,7 +67,7 @@ locrits:
         locrits: true
         platform: false
       public_address: ''
-      updated_at: '2025-09-17T21:18:43.422396+00:00'
+      updated_at: '2025-09-27T12:41:16.172093+00:00'
     Marie Recherche:
       access_to:
         full_memory: true
@@ -102,6 +102,42 @@ locrits:
         locrits: true
         platform: false
       public_address: pixie.localhost.run
+    TestCreateAPI:
+      access_to:
+        full_memory: false
+        llm_info: true
+        logs: true
+        quick_memory: true
+      active: false
+      created_at: '2025-09-27T15:41:00.034389'
+      description: Test Create API
+      ollama_model: llama3.2
+      open_to:
+        humans: true
+        internet: false
+        invitations: true
+        locrits: true
+        platform: false
+      public_address: null
+      updated_at: '2025-09-27T13:41:00.034399+00:00'
+    toto:
+      access_to:
+        full_memory: false
+        llm_info: true
+        logs: true
+        quick_memory: true
+      active: false
+      created_at: '2025-09-27T15:13:46.101692'
+      description: toto
+      ollama_model: llama3.2
+      open_to:
+        humans: true
+        internet: false
+        invitations: true
+        locrits: true
+        platform: false
+      public_address: null
+      updated_at: '2025-09-27T13:13:46.101701+00:00'
 logging:
   backup_count: 5
   console_output: true

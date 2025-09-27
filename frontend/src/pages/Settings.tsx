@@ -22,11 +22,16 @@ export default function Settings() {
   const [apiPort, setApiPort] = useState('8000')
   const [ollamaStatus, setOllamaStatus] = useState<'unknown' | 'connected' | 'disconnected'>('unknown')
   const [availableModels, setAvailableModels] = useState<OllamaModel[]>([])
+  const [locrits, setLocrits] = useState<any[]>([])
+  const [isLoadingLocrits, setIsLoadingLocrits] = useState(false)
+  const [editingLocrit, setEditingLocrit] = useState<string | null>(null)
+  const [editForm, setEditForm] = useState<any>({})
 
   // Load configuration and check Ollama status on component mount
   useEffect(() => {
     loadConfig()
     checkOllamaStatus()
+    loadLocritsConfig()
   }, [])
 
   const loadConfig = async () => {
@@ -200,6 +205,95 @@ export default function Settings() {
       toast.error('Connexion Ollama échouée')
     } finally {
       setIsTestingOllama(false)
+    }
+  }
+
+  const loadLocritsConfig = async () => {
+    setIsLoadingLocrits(true)
+    try {
+      const response = await fetch('http://localhost:5000/api/locrits')
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success && data.locrits) {
+          setLocrits(data.locrits.instances || [])
+        }
+      } else {
+        console.warn('Failed to load Locrits configuration')
+      }
+    } catch (error) {
+      console.error('Error loading Locrits configuration:', error)
+    } finally {
+      setIsLoadingLocrits(false)
+    }
+  }
+
+  const startEditingLocrit = (locritName: string) => {
+    const locrit = locrits.find(l => l[0] === locritName)
+    if (locrit) {
+      setEditingLocrit(locritName)
+      setEditForm({ ...locrit[1] })
+    }
+  }
+
+  const cancelEditingLocrit = () => {
+    setEditingLocrit(null)
+    setEditForm({})
+  }
+
+  const saveLocritConfig = async (locritName: string) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/locrits/${locritName}/config`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(editForm)
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          toast.success('Configuration du Locrit sauvegardée')
+          setEditingLocrit(null)
+          setEditForm({})
+          // Reload the configuration
+          await loadLocritsConfig()
+        } else {
+          throw new Error(data.error || 'Failed to save configuration')
+        }
+      } else {
+        throw new Error('Failed to save configuration')
+      }
+    } catch (error) {
+      toast.error('Erreur lors de la sauvegarde de la configuration')
+      console.error('Error saving Locrit configuration:', error)
+    }
+  }
+
+  const toggleLocritEdit = async (locritName: string) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/locrits/${locritName}/toggle-edit`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        if (data.success) {
+          toast.success(data.message)
+          // Reload the configuration
+          await loadLocritsConfig()
+        } else {
+          throw new Error(data.error || 'Failed to toggle edit permissions')
+        }
+      } else {
+        throw new Error('Failed to toggle edit permissions')
+      }
+    } catch (error) {
+      toast.error('Erreur lors de la modification des permissions')
+      console.error('Error toggling edit permissions:', error)
     }
   }
 
@@ -418,6 +512,207 @@ export default function Settings() {
               Nombre maximum de messages en mémoire (non modifiable via l'interface)
             </p>
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Locrits Configuration */}
+      <Card>
+        <CardHeader>
+          <CardTitle>🤖⚙️ Configuration des Locrits</CardTitle>
+          <CardDescription>
+            Gérez les paramètres et permissions de vos Locrits
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoadingLocrits ? (
+            <div className="flex items-center justify-center p-8">
+              <div className="text-muted-foreground">Chargement des Locrits...</div>
+            </div>
+          ) : locrits.length === 0 ? (
+            <div className="flex items-center justify-center p-8">
+              <div className="text-muted-foreground">Aucun Locrit configuré</div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {locrits.map(([locritName, settings]) => (
+                <div key={locritName} className="border rounded-lg p-4">
+                  {editingLocrit === locritName ? (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-medium">Édition: {locritName}</h4>
+                        <Button variant="outline" size="sm" onClick={cancelEditingLocrit}>
+                          Annuler
+                        </Button>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label>Description</Label>
+                          <Input
+                            value={editForm.description || ''}
+                            onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                            placeholder="Description du Locrit"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>Modèle Ollama</Label>
+                          <Input
+                            value={editForm.ollama_model || ''}
+                            onChange={(e) => setEditForm({ ...editForm, ollama_model: e.target.value })}
+                            placeholder="Nom du modèle"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>Adresse publique</Label>
+                          <Input
+                            value={editForm.public_address || ''}
+                            onChange={(e) => setEditForm({ ...editForm, public_address: e.target.value })}
+                            placeholder="Adresse publique (optionnel)"
+                          />
+                        </div>
+
+                        <div className="space-y-2">
+                          <Label>Statut</Label>
+                          <div className="flex items-center space-x-2">
+                            <input
+                              type="checkbox"
+                              id={`active-${locritName}`}
+                              checked={editForm.active || false}
+                              onChange={(e) => setEditForm({ ...editForm, active: e.target.checked })}
+                              className="rounded"
+                            />
+                            <Label htmlFor={`active-${locritName}`}>
+                              {editForm.active ? 'Actif' : 'Inactif'}
+                            </Label>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="space-y-3">
+                        <Label>Permissions d'accès</Label>
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                          {['logs', 'quick_memory', 'full_memory', 'llm_info'].map((perm) => (
+                            <div key={perm} className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                id={`${perm}-${locritName}`}
+                                checked={editForm.access_to?.[perm] || false}
+                                onChange={(e) => setEditForm({
+                                  ...editForm,
+                                  access_to: {
+                                    ...editForm.access_to,
+                                    [perm]: e.target.checked
+                                  }
+                                })}
+                                className="rounded"
+                              />
+                              <Label htmlFor={`${perm}-${locritName}`} className="text-sm">
+                                {perm === 'logs' ? 'Logs' :
+                                 perm === 'quick_memory' ? 'Mémoire rapide' :
+                                 perm === 'full_memory' ? 'Mémoire complète' : 'Info LLM'}
+                              </Label>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="space-y-3">
+                        <Label>Ouverture</Label>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                          {['humans', 'locrits', 'invitations', 'internet', 'platform'].map((target) => (
+                            <div key={target} className="flex items-center space-x-2">
+                              <input
+                                type="checkbox"
+                                id={`${target}-${locritName}`}
+                                checked={editForm.open_to?.[target] || false}
+                                onChange={(e) => setEditForm({
+                                  ...editForm,
+                                  open_to: {
+                                    ...editForm.open_to,
+                                    [target]: e.target.checked
+                                  }
+                                })}
+                                className="rounded"
+                              />
+                              <Label htmlFor={`${target}-${locritName}`} className="text-sm">
+                                {target === 'humans' ? 'Humains' :
+                                 target === 'locrits' ? 'Locrits' :
+                                 target === 'invitations' ? 'Invitations' :
+                                 target === 'internet' ? 'Internet' : 'Plateforme'}
+                              </Label>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="flex justify-end space-x-2">
+                        <Button variant="outline" onClick={cancelEditingLocrit}>
+                          Annuler
+                        </Button>
+                        <Button onClick={() => saveLocritConfig(locritName)}>
+                          💾 Sauvegarder
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="flex items-center space-x-3">
+                          <h4 className="font-medium">{locritName}</h4>
+                          <Badge variant={settings.active ? 'default' : 'secondary'}>
+                            {settings.active ? 'Actif' : 'Inactif'}
+                          </Badge>
+                        </div>
+                        <div className="flex space-x-2">
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => toggleLocritEdit(locritName)}
+                          >
+                            {settings.access_to?.logs && settings.access_to?.full_memory ? '🔓' : '🔒'} Édition
+                          </Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => startEditingLocrit(locritName)}
+                          >
+                            ✏️ Modifier
+                          </Button>
+                        </div>
+                      </div>
+
+                      <div className="text-sm text-muted-foreground mb-2">
+                        {settings.description}
+                      </div>
+
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                        <div>
+                          <span className="font-medium">Modèle:</span> {settings.ollama_model}
+                        </div>
+                        <div>
+                          <span className="font-medium">Adresse:</span> {settings.public_address || 'Non définie'}
+                        </div>
+                        <div>
+                          <span className="font-medium">Accès logs:</span>
+                          <Badge variant={settings.access_to?.logs ? 'default' : 'outline'} className="ml-1">
+                            {settings.access_to?.logs ? 'Oui' : 'Non'}
+                          </Badge>
+                        </div>
+                        <div>
+                          <span className="font-medium">Mémoire complète:</span>
+                          <Badge variant={settings.access_to?.full_memory ? 'default' : 'outline'} className="ml-1">
+                            {settings.access_to?.full_memory ? 'Oui' : 'Non'}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
         </CardContent>
       </Card>
 

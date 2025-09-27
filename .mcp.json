@@ -1,0 +1,22 @@
+{
+  "mcpServers": {
+    "browsermcp": {
+      "command": "npx",
+      "args": [
+        "@browsermcp/mcp@latest"
+      ],
+      "alwaysAllow": [
+        "browser_click",
+        "browser_navigate",
+        "browser_type"
+      ]
+    },
+    "shadcn": {
+      "command": "npx",
+      "args": [
+        "shadcn@latest",
+        "mcp"
+      ]
+    }
+  }
+}

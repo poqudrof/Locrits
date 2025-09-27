@@ -59,7 +59,7 @@ locrits:
       active: false
       created_at: '2025-09-14T18:57:16.743340'
       description: Le premire locrit
-      ollama_model: llama3.2
+      ollama_model: llama3.1:8b-instruct-q3_K_M
       open_to:
         humans: true
         internet: false
@@ -77,7 +77,7 @@ locrits:
       active: false
       created_at: '2025-09-13T14:29:07.098617'
       description: Spécialisée dans la recherche et l'analyse
-      ollama_model: llama3.2
+      ollama_model: llama3.1:8b-instruct-q3_K_M
       open_to:
         humans: true
         internet: true
@@ -94,7 +94,7 @@ locrits:
       active: true
       created_at: '2025-09-13T14:29:07.098610'
       description: Assistant personnel intelligent et organisé
-      ollama_model: llama3.2
+      ollama_model: llama3.1:8b-instruct-q3_K_M
       open_to:
         humans: true
         internet: false
@@ -124,8 +124,8 @@ network:
     enabled: false
     provider: localhost.run
 ollama:
-  base_url: http://100.120.224.11:11434/
-  default_model: llama3.2:latest
+  base_url: http://localhost:11434
+  default_model: llama3.1:8b-instruct-q3_K_M
   host: localhost
   port: 11434
   timeout: 30

@@ -317,7 +317,7 @@ class EditLocritScreen(Screen):
             return True
 
         # Accepter localhost et IP locales pour les tests
-        if address in ['localhost', '127.0.0.1'] or address.startswith('192.168.') or address.startswith('10.'):
+        if address in ['localhost', 'localhost'] or address.startswith('192.168.') or address.startswith('10.'):
             return True
 
         return False

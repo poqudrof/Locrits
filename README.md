@@ -4,18 +4,47 @@ Un système de gestion de chatbots autonomes avec interfaces TUI et Web. Chaque 
 
 ## 🚀 Démarrage rapide
 
-### Option 1: Interface Web (Recommandée) 🌐
+### 🌐 Interface Web (Recommandée)
 ```bash
+# 1. Activer l'environnement virtuel
 source .venv/bin/activate
+
+# 2. Installer les dépendances (si nécessaire)
+pip install -r requirements.txt
+
+# 3. Démarrer le backend
 python web_app.py
-# Ouvrir http://127.0.0.1:5000 dans votre navigateur
+
+# 4. Ouvrir dans votre navigateur
+# http://localhost:5000
 ```
 
-### Option 2: Interface Terminal
+### 💻 Interface Terminal (TUI)
 ```bash
+# 1. Démarrage rapide
 ./start.sh
-# Ou: ./.venv/bin/python main.py
+
+# 2. Ou manuellement
+source .venv/bin/activate
+python main.py
 ```
+
+### 🎯 Frontend React (Optionnel)
+```bash
+# 1. Aller dans le dossier frontend
+cd frontend
+
+# 2. Installer les dépendances
+npm install
+
+# 3. Démarrer le serveur de développement
+npm run dev
+
+# 4. Ouvrir dans votre navigateur
+# http://localhost:5174
+```
+
+> **Note**: Le backend Flask doit être démarré en premier pour que le frontend puisse communiquer avec l'API.
 
 ## ✨ Fonctionnalités implémentées
 
@@ -64,41 +93,15 @@ src/
 - **Base de données** : SQLite avec index FAISS pour recherche vectorielle
 - **Communication** : REST API + WebSocket pour temps réel
 
-## 🚀 Installation et lancement
+## ⚙️ Configuration des variables d'environnement
 
-L'environnement virtuel est déjà configuré avec toutes les dépendances !
-
-### Interface Terminal (TUI)
-```bash
-# Lancement rapide
-./start.sh
-
-# Ou manuellement
-./.venv/bin/python main.py
-```
-
-### Interface Web 🌐 (Nouveau!)
-```bash
-# Activer l'environnement virtuel
-source .venv/bin/activate
-
-# Installer Flask (si pas déjà fait)
-pip install flask>=2.3.0
-
-# Lancer l'interface web
-python web_app.py
-```
-
-**Interface web accessible sur: http://127.0.0.1:5000**
-
-### Configuration des variables d'environnement
-Pour l'interface web, vous pouvez configurer:
+### Variables Backend (Flask)
 ```bash
 # Port de l'interface web (défaut: 5000)
 export WEB_PORT=5000
 
-# Host d'écoute (défaut: 127.0.0.1)
-export WEB_HOST=127.0.0.1
+# Host d'écoute (défaut: localhost)
+export WEB_HOST=localhost
 
 # Mode debug Flask (défaut: False)
 export FLASK_DEBUG=true
@@ -106,6 +109,25 @@ export FLASK_DEBUG=true
 # Clé secrète pour les sessions (générez-en une en production)
 export FLASK_SECRET_KEY=your-secret-key-here
 ```
+
+### Variables Frontend (React)
+```bash
+# URL de l'API backend (défaut: http://localhost:5000)
+VITE_API_URL=http://localhost:5000
+
+# Mode de développement
+VITE_NODE_ENV=development
+```
+
+### 🔧 Résolution des problèmes CORS
+
+Si vous rencontrez des erreurs CORS entre le frontend et le backend :
+
+1. **Vérifiez que le backend est démarré en premier**
+2. **Ports supportés automatiquement** : 3000, 5173, 5174 (localhost et localhost)
+3. **Test CORS** : `python test_cors.py` (après installation des dépendances)
+
+Le backend est configuré pour accepter les requêtes cross-origin depuis les ports de développement standard.
 
 ## 🎮 Utilisation
 
@@ -162,7 +184,32 @@ Pour activer le chat avec LLM :
 ```
 locrit/
 ├── .venv/              # Environnement virtuel (configuré)
-├── src/                # Code source
+├── backend/            # Backend modulaire Flask ✨ NOUVEAU
+│   ├── __init__.py     # Package backend
+│   ├── app.py          # Factory Flask et runner
+│   ├── config/         # Configuration Flask
+│   │   ├── __init__.py
+│   │   └── flask_config.py # Classes de configuration
+│   ├── middleware/     # Middleware d'authentification
+│   │   ├── __init__.py
+│   │   └── auth.py     # Décorateurs d'auth
+│   └── routes/         # Routes modulaires
+│       ├── __init__.py
+│       ├── auth.py     # Authentification (login/logout)
+│       ├── dashboard.py # Tableau de bord
+│       ├── locrits.py  # CRUD Locrits
+│       ├── chat.py     # Chat avec Locrits
+│       ├── config.py   # Configuration app
+│       ├── errors.py   # Gestionnaires d'erreurs
+│       └── api/        # API publique
+│           ├── __init__.py
+│           └── v1.py   # API v1 inter-Locrits
+├── frontend/           # Frontend React (optionnel)
+│   ├── package.json    # Dépendances Node.js
+│   ├── vite.config.js  # Configuration Vite
+│   ├── src/            # Code source React
+│   └── public/         # Assets publics
+├── src/                # Code source TUI
 │   ├── app.py          # Interface TUI principale
 │   ├── ui/             # Interfaces utilisateur
 │   │   └── screens/    # Écrans TUI
@@ -188,11 +235,12 @@ locrit/
 ├── logs/               # Journaux de l'application
 ├── data/               # Base de données SQLite
 ├── admin/              # Fichiers admin Firebase SDK
-├── web_app.py          # Interface Web Flask ✨ NOUVEAU
+├── web_app.py          # Point d'entrée backend Flask ✨
 ├── main.py             # Point d'entrée TUI
 ├── start.sh            # Script de lancement TUI
 ├── config.yaml         # Configuration principale
-└── requirements.txt    # Dépendances (Flask ajouté)
+├── package.json        # Métadonnées projet Node.js
+└── requirements.txt    # Dépendances Python
 ```
 
 ## 🧠 Capacités actuelles
@@ -221,19 +269,32 @@ Voir `FEATURES.md` pour la roadmap complète :
 - Tunneling SSH pour accès distant
 - Communication inter-locrits autonome
 
-## Installation
+## 🚀 Installation complète
 
-1. Clonez le repository et naviguez dans le dossier :
+1. **Cloner le repository**
 ```bash
+git clone <repository-url>
 cd locrit
 ```
 
-2. L'environnement virtuel est déjà configuré et les dépendances installées.
-
-## Utilisation
-
+2. **Configuration Python (Backend + TUI)**
 ```bash
-python main.py
+# L'environnement virtuel est déjà configuré
+source .venv/bin/activate
+pip install -r requirements.txt
+```
+
+3. **Configuration Node.js (Frontend React - Optionnel)**
+```bash
+cd frontend
+npm install
+```
+
+4. **Configuration Ollama (Optionnel)**
+```bash
+# Installer Ollama : https://ollama.com
+# Puis lancer un modèle
+ollama run llama3.2
 ```
 
 ## 🔧 Dépendances installées

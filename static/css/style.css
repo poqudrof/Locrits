@@ -1,3 +1,9 @@
+/*
+    DEPRECATED: This CSS file is deprecated and will be replaced by Tailwind CSS + Shadcn/ui.
+    Date: 2025-09-26
+    Migration: Frontend is being rebuilt with React + Tailwind CSS styling
+*/
+
 /* Style CSS pour l'interface web Locrit */
 :root {
     --primary-color: #2563eb;

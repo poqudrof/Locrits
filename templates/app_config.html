@@ -1,3 +1,8 @@
+<!--
+    DEPRECATED: This template is deprecated and will be replaced by React components.
+    Date: 2025-09-26
+    Migration: App config being rebuilt as React component with settings management
+-->
 {% extends "base.html" %}
 
 {% block title %}Configuration - Locrit{% endblock %}
@@ -36,7 +41,7 @@
             <div class="d-flex gap-1 flex-wrap mb-2">
                 <small class="text-muted">Adresses courantes : </small>
                 <button type="button" class="btn btn-sm btn-outline quick-url" data-url="http://localhost:11434">Localhost</button>
-                <button type="button" class="btn btn-sm btn-outline quick-url" data-url="http://127.0.0.1:11434">127.0.0.1</button>
+                <button type="button" class="btn btn-sm btn-outline quick-url" data-url="http://localhost:11434">localhost</button>
                 <button type="button" class="btn btn-sm btn-outline quick-url" data-url="http://192.168.1.100:11434">LAN (.100)</button>
             </div>
             <small class="text-muted">URL complète du serveur Ollama (inclut le protocole et le port)</small>
@@ -279,7 +284,7 @@ document.getElementById('testConnection').addEventListener('click', async functi
             if (error.message.includes('Failed to fetch')) {
                 errorDetails = '<p><strong>Cause probable:</strong> Serveur Ollama non démarré ou URL incorrecte</p><p><strong>Solutions:</strong></p><ul><li>Vérifiez que Ollama est installé et démarré</li><li>Testez l\'URL dans votre navigateur</li><li>Vérifiez que le port 11434 est ouvert</li></ul>';
             } else if (error.message.includes('NetworkError')) {
-                errorDetails = '<p><strong>Cause probable:</strong> Problème réseau</p><p><strong>Solutions:</strong></p><ul><li>Vérifiez votre connexion réseau</li><li>Testez avec une autre adresse (localhost, 127.0.0.1)</li></ul>';
+                errorDetails = '<p><strong>Cause probable:</strong> Problème réseau</p><p><strong>Solutions:</strong></p><ul><li>Vérifiez votre connexion réseau</li><li>Testez avec une autre adresse (localhost, localhost)</li></ul>';
             } else {
                 errorDetails = `<p><strong>Détails techniques:</strong> ${error.message}</p>`;
             }

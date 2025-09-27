@@ -1,0 +1,28 @@
+{
+  "name": "locrit-testing",
+  "version": "1.0.0",
+  "description": "Fullstack testing suite for Locrit application",
+  "scripts": {
+    "test": "playwright test",
+    "test:ui": "playwright test --ui",
+    "test:headed": "playwright test --headed",
+    "test:debug": "playwright test --debug",
+    "test:e2e": "playwright test tests/e2e",
+    "test:integration": "playwright test tests/integration",
+    "test:dashboard": "playwright test tests/e2e/dashboard.spec.ts",
+    "test:locrits": "playwright test tests/e2e/locrits-management.spec.ts",
+    "test:create": "playwright test tests/e2e/create-locrit.spec.ts",
+    "test:settings": "playwright test tests/e2e/settings.spec.ts",
+    "test:api": "playwright test tests/integration/api-integration.spec.ts",
+    "test:config": "playwright test tests/integration/config-validation.spec.ts",
+    "test:chromium": "playwright test --project=chromium",
+    "test:firefox": "playwright test --project=firefox",
+    "test:webkit": "playwright test --project=webkit",
+    "test:report": "playwright show-report",
+    "test:install": "playwright install"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.1",
+    "shadcn": "^3.3.1"
+  }
+}

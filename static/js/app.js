@@ -1,4 +1,8 @@
 /**
+ * DEPRECATED: This JavaScript file is deprecated and will be replaced by React components.
+ * Date: 2025-09-26
+ * Migration: Frontend is being rebuilt with React + TypeScript
+ *
  * JavaScript principal pour l'interface web Locrit
  */
 

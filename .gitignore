@@ -209,3 +209,4 @@ logs/
 temp/
 
 node_modules/
+test-results/

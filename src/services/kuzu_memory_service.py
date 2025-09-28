@@ -563,6 +563,371 @@ class KuzuMemoryService:
             print(f"Error getting memory summary: {e}")
             return {"error": str(e)}
 
+    async def delete_message(self, message_id: str) -> bool:
+        """
+        Delete a message and its relationships.
+
+        Args:
+            message_id: ID of the message to delete
+
+        Returns:
+            True if deletion succeeds
+        """
+        if not self.is_initialized:
+            return False
+
+        try:
+            # Delete the message and all its relationships
+            await asyncio.to_thread(self.conn.execute, """
+                MATCH (m:Message {id: $message_id})
+                DETACH DELETE m
+            """, {"message_id": message_id})
+
+            return True
+
+        except Exception as e:
+            print(f"Error deleting message {message_id}: {e}")
+            return False
+
+    async def edit_message(self, message_id: str, new_content: str) -> bool:
+        """
+        Edit the content of an existing message.
+
+        Args:
+            message_id: ID of the message to edit
+            new_content: New message content
+
+        Returns:
+            True if edit succeeds
+        """
+        if not self.is_initialized:
+            return False
+
+        try:
+            # Update message content
+            await asyncio.to_thread(self.conn.execute, """
+                MATCH (m:Message {id: $message_id})
+                SET m.content = $new_content
+            """, {"message_id": message_id, "new_content": new_content})
+
+            # Re-extract and link concepts for the updated message
+            await self._extract_and_link_concepts(message_id, new_content)
+
+            return True
+
+        except Exception as e:
+            print(f"Error editing message {message_id}: {e}")
+            return False
+
+    async def add_memory(self, content: str, importance: float = 0.5, metadata: Dict = None) -> str:
+        """
+        Add a standalone memory entry.
+
+        Args:
+            content: Memory content
+            importance: Memory importance (0.0 to 1.0)
+            metadata: Additional metadata
+
+        Returns:
+            Memory ID
+        """
+        if not self.is_initialized:
+            raise Exception(f"Memory service not initialized for {self.locrit_name}")
+
+        timestamp = datetime.now()
+        memory_id = f"memory_{timestamp.strftime('%Y%m%d_%H%M%S_%f')}"
+
+        try:
+            await asyncio.to_thread(self.conn.execute, """
+                CREATE (m:Memory {
+                    id: $memory_id,
+                    content: $content,
+                    importance: $importance,
+                    created_at: $timestamp,
+                    last_accessed: $timestamp
+                })
+            """, {
+                "memory_id": memory_id,
+                "content": content,
+                "importance": importance,
+                "timestamp": timestamp
+            })
+
+            return memory_id
+
+        except Exception as e:
+            print(f"Error adding memory: {e}")
+            raise
+
+    async def delete_memory(self, memory_id: str) -> bool:
+        """
+        Delete a memory entry.
+
+        Args:
+            memory_id: ID of the memory to delete
+
+        Returns:
+            True if deletion succeeds
+        """
+        if not self.is_initialized:
+            return False
+
+        try:
+            await asyncio.to_thread(self.conn.execute, """
+                MATCH (m:Memory {id: $memory_id})
+                DETACH DELETE m
+            """, {"memory_id": memory_id})
+
+            return True
+
+        except Exception as e:
+            print(f"Error deleting memory {memory_id}: {e}")
+            return False
+
+    async def edit_concept(self, concept_id: str, name: str = None, description: str = None,
+                          confidence: float = None) -> bool:
+        """
+        Edit a concept's properties.
+
+        Args:
+            concept_id: ID of the concept to edit
+            name: New concept name (optional)
+            description: New concept description (optional)
+            confidence: New confidence score (optional)
+
+        Returns:
+            True if edit succeeds
+        """
+        if not self.is_initialized:
+            return False
+
+        try:
+            # Build update clause dynamically
+            updates = []
+            params = {"concept_id": concept_id}
+
+            if name is not None:
+                updates.append("c.name = $name")
+                params["name"] = name
+
+            if description is not None:
+                updates.append("c.description = $description")
+                params["description"] = description
+
+            if confidence is not None:
+                updates.append("c.confidence = $confidence")
+                params["confidence"] = confidence
+
+            if not updates:
+                return False
+
+            query = f"""
+                MATCH (c:Concept {{id: $concept_id}})
+                SET {', '.join(updates)}
+            """
+
+            await asyncio.to_thread(self.conn.execute, query, params)
+
+            return True
+
+        except Exception as e:
+            print(f"Error editing concept {concept_id}: {e}")
+            return False
+
+    async def delete_concept(self, concept_id: str) -> bool:
+        """
+        Delete a concept and its relationships.
+
+        Args:
+            concept_id: ID of the concept to delete
+
+        Returns:
+            True if deletion succeeds
+        """
+        if not self.is_initialized:
+            return False
+
+        try:
+            await asyncio.to_thread(self.conn.execute, """
+                MATCH (c:Concept {id: $concept_id})
+                DETACH DELETE c
+            """, {"concept_id": concept_id})
+
+            return True
+
+        except Exception as e:
+            print(f"Error deleting concept {concept_id}: {e}")
+            return False
+
+    async def delete_session(self, session_id: str) -> bool:
+        """
+        Delete a session and all its messages.
+
+        Args:
+            session_id: ID of the session to delete
+
+        Returns:
+            True if deletion succeeds
+        """
+        if not self.is_initialized:
+            return False
+
+        try:
+            # Delete all messages in the session first
+            await asyncio.to_thread(self.conn.execute, """
+                MATCH (m:Message)-[:PART_OF]->(s:Session {id: $session_id})
+                DETACH DELETE m
+            """, {"session_id": session_id})
+
+            # Delete the session
+            await asyncio.to_thread(self.conn.execute, """
+                MATCH (s:Session {id: $session_id})
+                DETACH DELETE s
+            """, {"session_id": session_id})
+
+            return True
+
+        except Exception as e:
+            print(f"Error deleting session {session_id}: {e}")
+            return False
+
+    async def clear_all_memory(self) -> bool:
+        """
+        Clear all memory data for this Locrit.
+
+        Returns:
+            True if clearing succeeds
+        """
+        if not self.is_initialized:
+            return False
+
+        try:
+            # Delete all nodes and relationships
+            await asyncio.to_thread(self.conn.execute, "MATCH (n) DETACH DELETE n")
+
+            # Recreate schema
+            await self._create_schema()
+
+            return True
+
+        except Exception as e:
+            print(f"Error clearing all memory: {e}")
+            return False
+
+    async def get_message_by_id(self, message_id: str) -> Optional[Dict]:
+        """
+        Get a specific message by ID.
+
+        Args:
+            message_id: ID of the message
+
+        Returns:
+            Message data or None if not found
+        """
+        if not self.is_initialized:
+            return None
+
+        try:
+            def get_message():
+                result = self.conn.execute("""
+                    MATCH (m:Message {id: $message_id})
+                    RETURN m.id, m.role, m.content, m.timestamp, m.session_id, m.metadata
+                """, {"message_id": message_id})
+
+                if result.has_next():
+                    row = result.get_next()
+                    if row:
+                        return {
+                            "id": row[0],
+                            "role": row[1],
+                            "content": row[2],
+                            "timestamp": str(row[3]),
+                            "session_id": row[4],
+                            "metadata": json.loads(row[5]) if row[5] else {}
+                        }
+                return None
+
+            return await asyncio.to_thread(get_message)
+
+        except Exception as e:
+            print(f"Error getting message {message_id}: {e}")
+            return None
+
+    async def get_session_by_id(self, session_id: str) -> Optional[Dict]:
+        """
+        Get a specific session by ID.
+
+        Args:
+            session_id: ID of the session
+
+        Returns:
+            Session data or None if not found
+        """
+        if not self.is_initialized:
+            return None
+
+        try:
+            def get_session():
+                result = self.conn.execute("""
+                    MATCH (s:Session {id: $session_id})
+                    RETURN s.id, s.name, s.topic, s.created_at, s.user_id
+                """, {"session_id": session_id})
+
+                if result.has_next():
+                    row = result.get_next()
+                    if row:
+                        return {
+                            "id": row[0],
+                            "name": row[1] if row[1] else row[0],
+                            "topic": row[2],
+                            "created_at": str(row[3]),
+                            "user_id": row[4]
+                        }
+                return None
+
+            return await asyncio.to_thread(get_session)
+
+        except Exception as e:
+            print(f"Error getting session {session_id}: {e}")
+            return None
+
+    async def get_all_memories(self) -> List[Dict]:
+        """
+        Get all standalone memory entries.
+
+        Returns:
+            List of memory entries
+        """
+        if not self.is_initialized:
+            return []
+
+        try:
+            def get_memories():
+                result = self.conn.execute("""
+                    MATCH (m:Memory)
+                    RETURN m.id, m.content, m.importance, m.created_at, m.last_accessed
+                    ORDER BY m.importance DESC, m.last_accessed DESC
+                """)
+
+                memories = []
+                while result.has_next():
+                    row = result.get_next()
+                    if row:
+                        memories.append({
+                            "id": row[0],
+                            "content": row[1],
+                            "importance": row[2],
+                            "created_at": str(row[3]),
+                            "last_accessed": str(row[4])
+                        })
+                return memories
+
+            return await asyncio.to_thread(get_memories)
+
+        except Exception as e:
+            print(f"Error getting all memories: {e}")
+            return []
+
     async def close(self) -> None:
         """Close the database connection."""
         try:

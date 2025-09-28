@@ -221,3 +221,292 @@ def get_memory_stats(locrit_name):
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+# Memory editing endpoints
+
+@memory_bp.route('/api/locrits/<locrit_name>/memory/messages/<message_id>', methods=['GET'])
+def get_message_by_id(locrit_name, message_id):
+    """Get a specific message by ID"""
+    try:
+        # Verify the Locrit exists and user has access
+        settings = config_service.get_locrit_settings(locrit_name)
+        if not settings:
+            return jsonify({'error': 'Locrit non trouvé'}), 404
+
+        access_to = settings.get('access_to', {})
+        if not access_to.get('full_memory', False):
+            return jsonify({'error': 'Accès à la mémoire complète requis'}), 403
+
+        message = asyncio.run(memory_manager.get_message_by_id(locrit_name, message_id))
+        if not message:
+            return jsonify({'error': 'Message non trouvé'}), 404
+
+        return jsonify({'message': message})
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@memory_bp.route('/api/locrits/<locrit_name>/memory/messages/<message_id>', methods=['PUT'])
+def edit_message(locrit_name, message_id):
+    """Edit a specific message"""
+    try:
+        # Verify the Locrit exists and user has access
+        settings = config_service.get_locrit_settings(locrit_name)
+        if not settings:
+            return jsonify({'error': 'Locrit non trouvé'}), 404
+
+        access_to = settings.get('access_to', {})
+        if not access_to.get('full_memory', False):
+            return jsonify({'error': 'Accès à la mémoire complète requis'}), 403
+
+        data = request.get_json()
+        if not data or 'content' not in data:
+            return jsonify({'error': 'Nouveau contenu requis'}), 400
+
+        success = asyncio.run(memory_manager.edit_message(locrit_name, message_id, data['content']))
+        if not success:
+            return jsonify({'error': 'Échec de la modification du message'}), 500
+
+        return jsonify({'success': True, 'message': 'Message modifié avec succès'})
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@memory_bp.route('/api/locrits/<locrit_name>/memory/messages/<message_id>', methods=['DELETE'])
+def delete_message(locrit_name, message_id):
+    """Delete a specific message"""
+    try:
+        # Verify the Locrit exists and user has access
+        settings = config_service.get_locrit_settings(locrit_name)
+        if not settings:
+            return jsonify({'error': 'Locrit non trouvé'}), 404
+
+        access_to = settings.get('access_to', {})
+        if not access_to.get('full_memory', False):
+            return jsonify({'error': 'Accès à la mémoire complète requis'}), 403
+
+        success = asyncio.run(memory_manager.delete_message(locrit_name, message_id))
+        if not success:
+            return jsonify({'error': 'Échec de la suppression du message'}), 500
+
+        return jsonify({'success': True, 'message': 'Message supprimé avec succès'})
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@memory_bp.route('/api/locrits/<locrit_name>/memory/sessions/<session_id>', methods=['GET'])
+def get_session_by_id(locrit_name, session_id):
+    """Get a specific session by ID"""
+    try:
+        # Verify the Locrit exists and user has access
+        settings = config_service.get_locrit_settings(locrit_name)
+        if not settings:
+            return jsonify({'error': 'Locrit non trouvé'}), 404
+
+        access_to = settings.get('access_to', {})
+        if not access_to.get('full_memory', False):
+            return jsonify({'error': 'Accès à la mémoire complète requis'}), 403
+
+        session = asyncio.run(memory_manager.get_session_by_id(locrit_name, session_id))
+        if not session:
+            return jsonify({'error': 'Session non trouvée'}), 404
+
+        return jsonify({'session': session})
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@memory_bp.route('/api/locrits/<locrit_name>/memory/sessions/<session_id>', methods=['DELETE'])
+def delete_session(locrit_name, session_id):
+    """Delete a specific session and all its messages"""
+    try:
+        # Verify the Locrit exists and user has access
+        settings = config_service.get_locrit_settings(locrit_name)
+        if not settings:
+            return jsonify({'error': 'Locrit non trouvé'}), 404
+
+        access_to = settings.get('access_to', {})
+        if not access_to.get('full_memory', False):
+            return jsonify({'error': 'Accès à la mémoire complète requis'}), 403
+
+        success = asyncio.run(memory_manager.delete_session(locrit_name, session_id))
+        if not success:
+            return jsonify({'error': 'Échec de la suppression de la session'}), 500
+
+        return jsonify({'success': True, 'message': 'Session supprimée avec succès'})
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@memory_bp.route('/api/locrits/<locrit_name>/memory/memories', methods=['GET'])
+def get_all_memories(locrit_name):
+    """Get all standalone memory entries"""
+    try:
+        # Verify the Locrit exists and user has access
+        settings = config_service.get_locrit_settings(locrit_name)
+        if not settings:
+            return jsonify({'error': 'Locrit non trouvé'}), 404
+
+        access_to = settings.get('access_to', {})
+        if not access_to.get('full_memory', False):
+            return jsonify({'error': 'Accès à la mémoire complète requis'}), 403
+
+        memories = asyncio.run(memory_manager.get_all_memories(locrit_name))
+
+        return jsonify({
+            'memories': memories,
+            'total': len(memories)
+        })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@memory_bp.route('/api/locrits/<locrit_name>/memory/memories', methods=['POST'])
+def add_memory(locrit_name):
+    """Add a standalone memory entry"""
+    try:
+        # Verify the Locrit exists and user has access
+        settings = config_service.get_locrit_settings(locrit_name)
+        if not settings:
+            return jsonify({'error': 'Locrit non trouvé'}), 404
+
+        access_to = settings.get('access_to', {})
+        if not access_to.get('full_memory', False):
+            return jsonify({'error': 'Accès à la mémoire complète requis'}), 403
+
+        data = request.get_json()
+        if not data or 'content' not in data:
+            return jsonify({'error': 'Contenu de la mémoire requis'}), 400
+
+        content = data['content']
+        importance = data.get('importance', 0.5)
+        metadata = data.get('metadata', {})
+
+        # Validate importance
+        if not (0.0 <= importance <= 1.0):
+            return jsonify({'error': 'L\'importance doit être entre 0.0 et 1.0'}), 400
+
+        memory_id = asyncio.run(memory_manager.add_memory(locrit_name, content, importance, metadata))
+        if not memory_id:
+            return jsonify({'error': 'Échec de l\'ajout de la mémoire'}), 500
+
+        return jsonify({'success': True, 'memory_id': memory_id, 'message': 'Mémoire ajoutée avec succès'})
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@memory_bp.route('/api/locrits/<locrit_name>/memory/memories/<memory_id>', methods=['DELETE'])
+def delete_memory(locrit_name, memory_id):
+    """Delete a standalone memory entry"""
+    try:
+        # Verify the Locrit exists and user has access
+        settings = config_service.get_locrit_settings(locrit_name)
+        if not settings:
+            return jsonify({'error': 'Locrit non trouvé'}), 404
+
+        access_to = settings.get('access_to', {})
+        if not access_to.get('full_memory', False):
+            return jsonify({'error': 'Accès à la mémoire complète requis'}), 403
+
+        success = asyncio.run(memory_manager.delete_memory(locrit_name, memory_id))
+        if not success:
+            return jsonify({'error': 'Échec de la suppression de la mémoire'}), 500
+
+        return jsonify({'success': True, 'message': 'Mémoire supprimée avec succès'})
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@memory_bp.route('/api/locrits/<locrit_name>/memory/concepts/<concept_id>', methods=['PUT'])
+def edit_concept(locrit_name, concept_id):
+    """Edit a concept's properties"""
+    try:
+        # Verify the Locrit exists and user has access
+        settings = config_service.get_locrit_settings(locrit_name)
+        if not settings:
+            return jsonify({'error': 'Locrit non trouvé'}), 404
+
+        access_to = settings.get('access_to', {})
+        if not access_to.get('full_memory', False):
+            return jsonify({'error': 'Accès à la mémoire complète requis'}), 403
+
+        data = request.get_json()
+        if not data:
+            return jsonify({'error': 'Données de modification requises'}), 400
+
+        name = data.get('name')
+        description = data.get('description')
+        confidence = data.get('confidence')
+
+        # Validate confidence if provided
+        if confidence is not None and not (0.0 <= confidence <= 1.0):
+            return jsonify({'error': 'La confiance doit être entre 0.0 et 1.0'}), 400
+
+        success = asyncio.run(memory_manager.edit_concept(locrit_name, concept_id, name, description, confidence))
+        if not success:
+            return jsonify({'error': 'Échec de la modification du concept'}), 500
+
+        return jsonify({'success': True, 'message': 'Concept modifié avec succès'})
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@memory_bp.route('/api/locrits/<locrit_name>/memory/concepts/<concept_id>', methods=['DELETE'])
+def delete_concept(locrit_name, concept_id):
+    """Delete a concept and its relationships"""
+    try:
+        # Verify the Locrit exists and user has access
+        settings = config_service.get_locrit_settings(locrit_name)
+        if not settings:
+            return jsonify({'error': 'Locrit non trouvé'}), 404
+
+        access_to = settings.get('access_to', {})
+        if not access_to.get('full_memory', False):
+            return jsonify({'error': 'Accès à la mémoire complète requis'}), 403
+
+        success = asyncio.run(memory_manager.delete_concept(locrit_name, concept_id))
+        if not success:
+            return jsonify({'error': 'Échec de la suppression du concept'}), 500
+
+        return jsonify({'success': True, 'message': 'Concept supprimé avec succès'})
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@memory_bp.route('/api/locrits/<locrit_name>/memory/clear', methods=['DELETE'])
+def clear_all_memory(locrit_name):
+    """Clear all memory data for the Locrit"""
+    try:
+        # Verify the Locrit exists and user has access
+        settings = config_service.get_locrit_settings(locrit_name)
+        if not settings:
+            return jsonify({'error': 'Locrit non trouvé'}), 404
+
+        access_to = settings.get('access_to', {})
+        if not access_to.get('full_memory', False):
+            return jsonify({'error': 'Accès à la mémoire complète requis'}), 403
+
+        # Require confirmation
+        data = request.get_json()
+        if not data or not data.get('confirm'):
+            return jsonify({'error': 'Confirmation requise pour supprimer toute la mémoire'}), 400
+
+        success = asyncio.run(memory_manager.clear_all_memory(locrit_name))
+        if not success:
+            return jsonify({'error': 'Échec de la suppression de toute la mémoire'}), 500
+
+        return jsonify({'success': True, 'message': 'Toute la mémoire a été supprimée avec succès'})
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500

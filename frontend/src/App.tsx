@@ -9,6 +9,7 @@ import LocritSettings from '@/pages/LocritSettings'
 import CreateLocrit from '@/pages/CreateLocrit'
 import Settings from '@/pages/Settings'
 import Chat from '@/pages/Chat'
+import MemoryExplorer from '@/pages/MemoryExplorer'
 import CSSTest from '@/pages/CSSTest'
 import '@/lib/firebase' // Initialize Firebase on app startup
 
@@ -25,6 +26,7 @@ function App() {
               <Route path="dashboard" element={<Dashboard />} />
               <Route path="my-locrits" element={<MyLocrits />} />
               <Route path="my-locrits/:locritName/settings" element={<LocritSettings />} />
+              <Route path="my-locrits/:locritName/memory" element={<MemoryExplorer />} />
               <Route path="create-locrit" element={<CreateLocrit />} />
               <Route path="settings" element={<Settings />} />
               <Route path="chat/:locritName" element={<Chat />} />

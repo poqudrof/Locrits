@@ -278,6 +278,245 @@ class MemoryManagerService:
 
         return True  # Already closed
 
+    # Memory editing methods
+
+    async def delete_message(self, locrit_name: str, message_id: str) -> bool:
+        """
+        Delete a message from a Locrit's memory.
+
+        Args:
+            locrit_name: Name of the Locrit
+            message_id: ID of the message to delete
+
+        Returns:
+            True if deletion succeeds
+        """
+        memory_service = await self.get_memory_service(locrit_name)
+        if not memory_service:
+            return False
+
+        try:
+            return await memory_service.delete_message(message_id)
+        except Exception as e:
+            print(f"Error deleting message for {locrit_name}: {e}")
+            return False
+
+    async def edit_message(self, locrit_name: str, message_id: str, new_content: str) -> bool:
+        """
+        Edit a message in a Locrit's memory.
+
+        Args:
+            locrit_name: Name of the Locrit
+            message_id: ID of the message to edit
+            new_content: New message content
+
+        Returns:
+            True if edit succeeds
+        """
+        memory_service = await self.get_memory_service(locrit_name)
+        if not memory_service:
+            return False
+
+        try:
+            return await memory_service.edit_message(message_id, new_content)
+        except Exception as e:
+            print(f"Error editing message for {locrit_name}: {e}")
+            return False
+
+    async def add_memory(self, locrit_name: str, content: str, importance: float = 0.5,
+                        metadata: Dict = None) -> Optional[str]:
+        """
+        Add a standalone memory to a Locrit.
+
+        Args:
+            locrit_name: Name of the Locrit
+            content: Memory content
+            importance: Memory importance (0.0 to 1.0)
+            metadata: Additional metadata
+
+        Returns:
+            Memory ID or None if error
+        """
+        memory_service = await self.get_memory_service(locrit_name)
+        if not memory_service:
+            return None
+
+        try:
+            return await memory_service.add_memory(content, importance, metadata)
+        except Exception as e:
+            print(f"Error adding memory for {locrit_name}: {e}")
+            return None
+
+    async def delete_memory(self, locrit_name: str, memory_id: str) -> bool:
+        """
+        Delete a memory from a Locrit.
+
+        Args:
+            locrit_name: Name of the Locrit
+            memory_id: ID of the memory to delete
+
+        Returns:
+            True if deletion succeeds
+        """
+        memory_service = await self.get_memory_service(locrit_name)
+        if not memory_service:
+            return False
+
+        try:
+            return await memory_service.delete_memory(memory_id)
+        except Exception as e:
+            print(f"Error deleting memory for {locrit_name}: {e}")
+            return False
+
+    async def edit_concept(self, locrit_name: str, concept_id: str, name: str = None,
+                          description: str = None, confidence: float = None) -> bool:
+        """
+        Edit a concept in a Locrit's memory.
+
+        Args:
+            locrit_name: Name of the Locrit
+            concept_id: ID of the concept to edit
+            name: New concept name (optional)
+            description: New concept description (optional)
+            confidence: New confidence score (optional)
+
+        Returns:
+            True if edit succeeds
+        """
+        memory_service = await self.get_memory_service(locrit_name)
+        if not memory_service:
+            return False
+
+        try:
+            return await memory_service.edit_concept(concept_id, name, description, confidence)
+        except Exception as e:
+            print(f"Error editing concept for {locrit_name}: {e}")
+            return False
+
+    async def delete_concept(self, locrit_name: str, concept_id: str) -> bool:
+        """
+        Delete a concept from a Locrit's memory.
+
+        Args:
+            locrit_name: Name of the Locrit
+            concept_id: ID of the concept to delete
+
+        Returns:
+            True if deletion succeeds
+        """
+        memory_service = await self.get_memory_service(locrit_name)
+        if not memory_service:
+            return False
+
+        try:
+            return await memory_service.delete_concept(concept_id)
+        except Exception as e:
+            print(f"Error deleting concept for {locrit_name}: {e}")
+            return False
+
+    async def delete_session(self, locrit_name: str, session_id: str) -> bool:
+        """
+        Delete a session and all its messages from a Locrit's memory.
+
+        Args:
+            locrit_name: Name of the Locrit
+            session_id: ID of the session to delete
+
+        Returns:
+            True if deletion succeeds
+        """
+        memory_service = await self.get_memory_service(locrit_name)
+        if not memory_service:
+            return False
+
+        try:
+            return await memory_service.delete_session(session_id)
+        except Exception as e:
+            print(f"Error deleting session for {locrit_name}: {e}")
+            return False
+
+    async def clear_all_memory(self, locrit_name: str) -> bool:
+        """
+        Clear all memory data for a Locrit.
+
+        Args:
+            locrit_name: Name of the Locrit
+
+        Returns:
+            True if clearing succeeds
+        """
+        memory_service = await self.get_memory_service(locrit_name)
+        if not memory_service:
+            return False
+
+        try:
+            return await memory_service.clear_all_memory()
+        except Exception as e:
+            print(f"Error clearing all memory for {locrit_name}: {e}")
+            return False
+
+    async def get_message_by_id(self, locrit_name: str, message_id: str) -> Optional[Dict]:
+        """
+        Get a specific message by ID from a Locrit's memory.
+
+        Args:
+            locrit_name: Name of the Locrit
+            message_id: ID of the message
+
+        Returns:
+            Message data or None if not found
+        """
+        memory_service = await self.get_memory_service(locrit_name)
+        if not memory_service:
+            return None
+
+        try:
+            return await memory_service.get_message_by_id(message_id)
+        except Exception as e:
+            print(f"Error getting message for {locrit_name}: {e}")
+            return None
+
+    async def get_session_by_id(self, locrit_name: str, session_id: str) -> Optional[Dict]:
+        """
+        Get a specific session by ID from a Locrit's memory.
+
+        Args:
+            locrit_name: Name of the Locrit
+            session_id: ID of the session
+
+        Returns:
+            Session data or None if not found
+        """
+        memory_service = await self.get_memory_service(locrit_name)
+        if not memory_service:
+            return None
+
+        try:
+            return await memory_service.get_session_by_id(session_id)
+        except Exception as e:
+            print(f"Error getting session for {locrit_name}: {e}")
+            return None
+
+    async def get_all_memories(self, locrit_name: str) -> List[Dict]:
+        """
+        Get all standalone memory entries for a Locrit.
+
+        Args:
+            locrit_name: Name of the Locrit
+
+        Returns:
+            List of memory entries
+        """
+        memory_service = await self.get_memory_service(locrit_name)
+        if not memory_service:
+            return []
+
+        try:
+            return await memory_service.get_all_memories()
+        except Exception as e:
+            print(f"Error getting all memories for {locrit_name}: {e}")
+            return []
+
 
 # Global instance
 memory_manager = MemoryManagerService()

@@ -215,6 +215,13 @@ export default function MyLocrits() {
                         ⚙️ Configurer
                       </Button>
                     </Link>
+                    {settings.access_to?.full_memory && (
+                      <Link to={`/my-locrits/${locritName}/memory`}>
+                        <Button variant="ghost" size="sm">
+                          🧠 Mémoire
+                        </Button>
+                      </Link>
+                    )}
                     <Button variant="ghost" size="sm" onClick={() => toggleDetails(locritName)}>
                       📄 Détails
                     </Button>

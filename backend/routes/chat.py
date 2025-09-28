@@ -8,6 +8,9 @@ from flask import Blueprint, render_template, request, session, flash, redirect,
 from backend.middleware.auth import login_required
 from src.services.config_service import config_service
 from src.services.ui_logging_service import ui_logging_service
+from langchain_community.chat_models import ChatOllama
+from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
+from langchain_core.callbacks import StreamingStdOutCallbackHandler
 
 chat_bp = Blueprint('chat', __name__)
 
@@ -38,7 +41,6 @@ def chat_with_locrit(locrit_name):
 
 
 @chat_bp.route('/api/locrits/<locrit_name>/chat', methods=['POST'])
-@login_required
 def api_chat_with_locrit(locrit_name):
     """API pour envoyer un message à un Locrit"""
     try:
@@ -59,35 +61,98 @@ def api_chat_with_locrit(locrit_name):
         if not message:
             return jsonify({'error': 'Message vide'}), 400
 
-        # Utiliser le service Ollama pour générer la réponse
-        from src.services.ollama_service import get_ollama_service
-        ollama_service = get_ollama_service()
-
         # Configurer le modèle du Locrit
         model = settings.get('ollama_model')
         if not model:
             return jsonify({'error': 'Aucun modèle configuré pour ce Locrit'}), 400
+
+        # Utiliser LangChain avec ChatOllama
+        from src.services.ollama_service import get_ollama_service
+        from src.services.memory_manager_service import memory_manager
+        ollama_service = get_ollama_service()
 
         # Test de connexion
         connection_test = ollama_service.test_connection()
         if not connection_test.get('success'):
             return jsonify({'error': 'Service Ollama non disponible'}), 500
 
+        # Sauvegarder le message utilisateur dans la mémoire du Locrit
+        user_id = session.get('user_name', 'web_user') if 'user_name' in session else 'anonymous_user'
+        session_id = f"web_{user_id}_{locrit_name}"
+
+        try:
+            # Sauvegarder le message utilisateur
+            asyncio.run(memory_manager.save_message(
+                locrit_name=locrit_name,
+                role="user",
+                content=message,
+                session_id=session_id,
+                user_id=user_id
+            ))
+        except Exception as e:
+            logger.warning(f"Erreur sauvegarde message utilisateur: {e}")
+
         # Préparer le prompt système basé sur la description du Locrit
         system_prompt = f"Tu es {locrit_name}, un Locrit. {settings.get('description', '')}"
 
-        # Pour l'instant, utiliser une réponse synchrone simple
-        # Le streaming sera ajouté dans la prochaine étape
         try:
-            ollama_service.current_model = model
-            ollama_service.is_connected = True
-            ollama_service.available_models = connection_test.get('models', [])
+            # Récupérer l'historique de conversation depuis la mémoire Kuzu
+            conversation_history = []
+            try:
+                # Récupérer les derniers messages de cette session (limite à 20 pour éviter de surcharger le contexte)
+                history_messages = asyncio.run(memory_manager.get_conversation_history(
+                    locrit_name=locrit_name,
+                    session_id=session_id,
+                    limit=20
+                ))
 
-            response = asyncio.run(ollama_service.chat(message, system_prompt))
+                # Convertir l'historique en messages LangChain
+                for msg in history_messages:
+                    if msg.get('role') == 'user':
+                        conversation_history.append(HumanMessage(content=msg.get('content', '')))
+                    elif msg.get('role') == 'assistant':
+                        conversation_history.append(AIMessage(content=msg.get('content', '')))
+
+            except Exception as e:
+                logger.warning(f"Erreur récupération historique conversation: {e}")
+                # Continuer sans historique si la récupération échoue
+
+            # Initialiser ChatOllama avec LangChain
+            chat_model = ChatOllama(
+                model=model,
+                base_url=ollama_service.base_url,
+                temperature=0.7
+            )
+
+            # Préparer les messages: système + historique + message actuel
+            messages = [
+                SystemMessage(content=system_prompt)
+            ]
+
+            # Ajouter l'historique de conversation
+            messages.extend(conversation_history)
+
+            # Ajouter le message actuel
+            messages.append(HumanMessage(content=message))
+
+            # Générer la réponse
+            response = chat_model.invoke(messages)
+
+            # Sauvegarder la réponse dans la mémoire du Locrit
+            try:
+                asyncio.run(memory_manager.save_message(
+                    locrit_name=locrit_name,
+                    role="assistant",
+                    content=response.content,
+                    session_id=session_id,
+                    user_id=user_id
+                ))
+            except Exception as e:
+                logger.warning(f"Erreur sauvegarde réponse: {e}")
 
             return jsonify({
                 'success': True,
-                'response': response,
+                'response': response.content,
                 'locrit_name': locrit_name,
                 'model': model
             })
@@ -123,14 +188,14 @@ def api_chat_stream_with_locrit(locrit_name):
         if not message:
             return jsonify({'error': 'Message vide'}), 400
 
-        # Utiliser le service Ollama pour générer la réponse
-        from src.services.ollama_service import get_ollama_service
-        ollama_service = get_ollama_service()
-
         # Configurer le modèle du Locrit
         model = settings.get('ollama_model')
         if not model:
             return jsonify({'error': 'Aucun modèle configuré pour ce Locrit'}), 400
+
+        # Utiliser LangChain avec ChatOllama
+        from src.services.ollama_service import get_ollama_service
+        ollama_service = get_ollama_service()
 
         # Test de connexion
         connection_test = ollama_service.test_connection()
@@ -141,29 +206,33 @@ def api_chat_stream_with_locrit(locrit_name):
         system_prompt = f"Tu es {locrit_name}, un Locrit. {settings.get('description', '')}"
 
         def generate_stream():
-            """Générateur pour le streaming"""
+            """Générateur pour le streaming avec LangChain"""
             try:
-                # Utiliser le client Ollama synchrone avec streaming
-                import ollama
+                # Classe de callback personnalisée pour le streaming
+                class StreamingCallback:
+                    def __init__(self):
+                        self.tokens = []
 
-                client = ollama.Client(host=ollama_service.base_url)
+                    def on_llm_new_token(self, token: str, **kwargs) -> None:
+                        self.tokens.append(token)
 
-                messages = []
-                if system_prompt:
-                    messages.append({"role": "system", "content": system_prompt})
-                messages.append({"role": "user", "content": message})
-
-                stream = client.chat(
+                # Initialiser ChatOllama avec LangChain
+                chat_model = ChatOllama(
                     model=model,
-                    messages=messages,
-                    stream=True
+                    base_url=ollama_service.base_url,
+                    temperature=0.7
                 )
 
-                for chunk in stream:
-                    if 'message' in chunk and 'content' in chunk['message']:
-                        content = chunk['message']['content']
-                        if content:
-                            yield f"data: {json.dumps({'chunk': content, 'done': False})}\\n\\n"
+                # Préparer les messages
+                messages = [
+                    SystemMessage(content=system_prompt),
+                    HumanMessage(content=message)
+                ]
+
+                # Streamer avec LangChain
+                for chunk in chat_model.stream(messages):
+                    if chunk.content:
+                        yield f"data: {json.dumps({'chunk': chunk.content, 'done': False})}\\n\\n"
 
                 yield f"data: {json.dumps({'done': True})}\\n\\n"
 

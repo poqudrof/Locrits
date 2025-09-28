@@ -3,10 +3,13 @@ WebSocket routes for real-time chat communication
 """
 
 import json
+import asyncio
 from datetime import datetime
+from flask import session
 from flask_socketio import Namespace, emit, join_room, leave_room
 from src.services.config_service import config_service
 from src.services.ui_logging_service import ui_logging_service
+from src.services.memory_manager_service import memory_manager
 
 # Logger pour l'application web
 logger = ui_logging_service.logger
@@ -84,10 +87,46 @@ class ChatNamespace(Namespace):
                 emit('error', {'message': 'Ollama service unavailable'})
                 return
 
+            # Set up session and user ID for memory
+            user_id = session.get('user_name', 'web_user') if 'user_name' in session else 'websocket_user'
+            session_id = f"websocket_{user_id}_{locrit_name}"
+
+            # Save user message to memory
+            try:
+                asyncio.run(memory_manager.save_message(
+                    locrit_name=locrit_name,
+                    role="user",
+                    content=message,
+                    session_id=session_id,
+                    user_id=user_id
+                ))
+            except Exception as e:
+                logger.warning(f"Error saving user message to memory: {e}")
+
             # Prepare system prompt
             system_prompt = f"Tu es {locrit_name}, un Locrit. {settings.get('description', '')}"
 
             logger.info(f"Processing chat message for {locrit_name} using model {model}")
+
+            # Retrieve conversation history from memory
+            conversation_history = []
+            try:
+                # Get last 20 messages for context
+                history_messages = asyncio.run(memory_manager.get_conversation_history(
+                    locrit_name=locrit_name,
+                    session_id=session_id,
+                    limit=20
+                ))
+
+                # Convert to Ollama format
+                for msg in history_messages:
+                    if msg.get('role') == 'user':
+                        conversation_history.append({"role": "user", "content": msg.get('content', '')})
+                    elif msg.get('role') == 'assistant':
+                        conversation_history.append({"role": "assistant", "content": msg.get('content', '')})
+
+            except Exception as e:
+                logger.warning(f"Error retrieving conversation history: {e}")
 
             # Stream the response
             try:
@@ -95,9 +134,15 @@ class ChatNamespace(Namespace):
 
                 client = ollama.Client(host=ollama_service.base_url)
 
+                # Build messages with conversation context
                 messages = []
                 if system_prompt:
                     messages.append({"role": "system", "content": system_prompt})
+
+                # Add conversation history
+                messages.extend(conversation_history)
+
+                # Add current user message
                 messages.append({"role": "user", "content": message})
 
                 stream = client.chat(
@@ -106,18 +151,31 @@ class ChatNamespace(Namespace):
                     stream=True
                 )
 
-                # Send chunks to the client
-                # Stream the response if requested
+                # Send chunks to the client and collect full response
+                full_response = ""
                 if stream:
                     for chunk in stream:
                         if 'message' in chunk and 'content' in chunk['message']:
                             content = chunk['message']['content']
                             if content:
+                                full_response += content
                                 emit('chat_chunk', {
                                     'locrit_name': locrit_name,
                                     'content': content,
                                     'timestamp': datetime.now().isoformat()
                                 })
+
+                    # Save assistant response to memory
+                    try:
+                        asyncio.run(memory_manager.save_message(
+                            locrit_name=locrit_name,
+                            role="assistant",
+                            content=full_response,
+                            session_id=session_id,
+                            user_id=user_id
+                        ))
+                    except Exception as e:
+                        logger.warning(f"Error saving assistant response to memory: {e}")
 
                     # Send completion signal
                     emit('chat_complete', {
@@ -129,6 +187,19 @@ class ChatNamespace(Namespace):
                     full_response = "".join(
                         chunk['message']['content'] for chunk in stream if 'message' in chunk and 'content' in chunk['message']
                     )
+
+                    # Save assistant response to memory
+                    try:
+                        asyncio.run(memory_manager.save_message(
+                            locrit_name=locrit_name,
+                            role="assistant",
+                            content=full_response,
+                            session_id=session_id,
+                            user_id=user_id
+                        ))
+                    except Exception as e:
+                        logger.warning(f"Error saving assistant response to memory: {e}")
+
                     emit('chat_response', {
                         'locrit_name': locrit_name,
                         'response': full_response,

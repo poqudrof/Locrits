@@ -37,6 +37,8 @@ Dans les premières étapes on est focus sur :
 
 # Code instructions : 
 
+For Python use the venv in  .venv directory.
+
 Do not write code in the documentations. 
 
 The python UI using `textual` is deprecated. Do not 

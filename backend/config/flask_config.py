@@ -18,8 +18,6 @@ class Config:
     # Configuration CORS pour React frontend
     CORS_ORIGINS = [
         'http://localhost:5173',
-        'http://localhost:5174',
-        'http://localhost:5173',
         'http://localhost:5174'
     ]
 
@@ -31,8 +29,6 @@ class DevelopmentConfig(Config):
 
     # More permissive CORS in development
     CORS_ORIGINS = [
-        'http://localhost:5173',
-        'http://localhost:5174',
         'http://localhost:5173',
         'http://localhost:5174',
         'http://localhost:3000',  # Common React dev port

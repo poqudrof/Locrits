@@ -3,10 +3,24 @@ Memory API routes for viewing Locrit memory through the web interface.
 """
 
 import asyncio
+import sys
+from concurrent.futures import ThreadPoolExecutor
 from flask import Blueprint, request, jsonify, session
 from backend.middleware.auth import login_required
 from src.services.memory_manager_service import memory_manager
 from src.services.config_service import config_service
+from src.services.comprehensive_logging_service import comprehensive_logger, LogLevel, LogCategory
+
+# Compatibility helper for older Python versions
+def async_to_thread(func, *args, **kwargs):
+    """Compatibility wrapper for asyncio.to_thread (Python 3.9+)"""
+    if hasattr(asyncio, 'to_thread'):
+        return asyncio.to_thread(func, *args, **kwargs)
+    else:
+        # Fallback for older Python versions
+        executor = ThreadPoolExecutor()
+        loop = asyncio.get_event_loop()
+        return loop.run_in_executor(executor, func, *args, **kwargs)
 
 memory_bp = Blueprint('memory', __name__)
 
@@ -37,9 +51,19 @@ def get_memory_summary(locrit_name):
 def search_memory(locrit_name):
     """Search through Locrit memory"""
     try:
+        # Start operation tracking
+        operation_id = comprehensive_logger.start_operation(f"api_memory_search_{locrit_name}")
+
         # Verify the Locrit exists
         settings = config_service.get_locrit_settings(locrit_name)
         if not settings:
+            comprehensive_logger.log_api_request(
+                endpoint=f"/api/locrits/{locrit_name}/memory/search",
+                method="GET",
+                locrit_name=locrit_name,
+                status_code=404,
+                error="Locrit not found"
+            )
             return jsonify({'error': 'Locrit non trouvé'}), 404
 
         # Check access level
@@ -48,6 +72,13 @@ def search_memory(locrit_name):
         has_full_memory = access_to.get('full_memory', False)
 
         if not (has_quick_memory or has_full_memory):
+            comprehensive_logger.log_api_request(
+                endpoint=f"/api/locrits/{locrit_name}/memory/search",
+                method="GET",
+                locrit_name=locrit_name,
+                status_code=403,
+                error="Memory access not authorized"
+            )
             return jsonify({'error': 'Accès à la mémoire non autorisé pour ce Locrit'}), 403
 
         # Get search parameters
@@ -55,6 +86,13 @@ def search_memory(locrit_name):
         limit = min(int(request.args.get('limit', 10)), 50)  # Max 50 results
 
         if not query:
+            comprehensive_logger.log_api_request(
+                endpoint=f"/api/locrits/{locrit_name}/memory/search",
+                method="GET",
+                locrit_name=locrit_name,
+                status_code=400,
+                error="Search query required"
+            )
             return jsonify({'error': 'Paramètre de recherche requis'}), 400
 
         # Search memory
@@ -64,6 +102,23 @@ def search_memory(locrit_name):
         if has_quick_memory and not has_full_memory:
             results = results[:5]  # Limit to 5 results for quick memory
 
+        # End operation tracking
+        duration_ms = comprehensive_logger.end_operation(operation_id)
+
+        # Log successful API request
+        comprehensive_logger.log_api_request(
+            endpoint=f"/api/locrits/{locrit_name}/memory/search",
+            method="GET",
+            locrit_name=locrit_name,
+            duration_ms=duration_ms,
+            status_code=200,
+            data={
+                "query": query,
+                "results_count": len(results),
+                "access_level": 'full' if has_full_memory else 'quick'
+            }
+        )
+
         return jsonify({
             'query': query,
             'results': results,
@@ -72,6 +127,19 @@ def search_memory(locrit_name):
         })
 
     except Exception as e:
+        # End operation tracking for failed request
+        if 'operation_id' in locals():
+            duration_ms = comprehensive_logger.end_operation(operation_id)
+
+        # Log failed API request
+        comprehensive_logger.log_api_request(
+            endpoint=f"/api/locrits/{locrit_name}/memory/search",
+            method="GET",
+            locrit_name=locrit_name,
+            status_code=500,
+            error=str(e)
+        )
+
         return jsonify({'error': str(e)}), 500
 
 
@@ -154,6 +222,39 @@ def get_memory_concepts(locrit_name):
             'concepts': concepts,
             'total': len(concepts)
         })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@memory_bp.route('/api/locrits/<locrit_name>/memory/concepts/details', methods=['GET'])
+def get_concept_details(locrit_name):
+    """Get detailed information about a specific concept"""
+    try:
+        # Verify the Locrit exists
+        settings = config_service.get_locrit_settings(locrit_name)
+        if not settings:
+            return jsonify({'error': 'Locrit non trouvé'}), 404
+
+        # Check if user has access to memory
+        access_to = settings.get('access_to', {})
+        if not access_to.get('full_memory', False):
+            return jsonify({'error': 'Accès à la mémoire complète requis'}), 403
+
+        # Get concept name and type from query parameters
+        concept_name = request.args.get('name', None)
+        concept_type = request.args.get('type', None)
+
+        if not concept_name:
+            return jsonify({'error': 'Nom du concept requis'}), 400
+
+        # Get concept details
+        concept_details = asyncio.run(memory_manager.get_concept_details(locrit_name, concept_name, concept_type))
+
+        if not concept_details:
+            return jsonify({'error': 'Concept non trouvé'}), 404
+
+        return jsonify(concept_details)
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500
@@ -507,6 +608,305 @@ def clear_all_memory(locrit_name):
             return jsonify({'error': 'Échec de la suppression de toute la mémoire'}), 500
 
         return jsonify({'success': True, 'message': 'Toute la mémoire a été supprimée avec succès'})
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+# New modular memory system endpoints
+
+@memory_bp.route('/api/v1/locrits/<locrit_name>/memory/store-conversation', methods=['POST'])
+def store_conversation_in_memory(locrit_name):
+    """Store conversation messages in the new modular memory system"""
+    try:
+        # Verify the Locrit exists
+        settings = config_service.get_locrit_settings(locrit_name)
+        if not settings:
+            return jsonify({'error': 'Locrit non trouvé'}), 404
+
+        data = request.get_json()
+        if not data or 'messages' not in data:
+            return jsonify({'error': 'Messages requis'}), 400
+
+        messages = data['messages']
+        force_update = data.get('force_update', False)
+
+        if not messages:
+            return jsonify({'error': 'Aucun message à sauvegarder'}), 400
+
+        # Import the new memory system
+        try:
+            import asyncio
+            import sys
+            import os
+
+            # Add the project root to Python path
+            project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
+            if project_root not in sys.path:
+                sys.path.insert(0, project_root)
+
+            from src.services.memory import create_memory_system
+
+            async def process_conversation():
+                # Initialize memory system
+                memory_manager, memory_tools = await create_memory_system(
+                    locrit_name=locrit_name,
+                    config_path="config/memory.yaml"
+                )
+
+                try:
+                    # Process messages and let LLM decide storage
+                    results = {
+                        'total_processed': 0,
+                        'memories_stored': 0,
+                        'decisions': []
+                    }
+
+                    for message in messages:
+                        if not message.get('content', '').strip():
+                            continue
+
+                        # Let the AI analyze and decide storage
+                        analysis = await memory_tools["analyze_memory_decision"](
+                            content=message['content'],
+                            context={
+                                'role': message.get('type', 'user'),
+                                'timestamp': message.get('timestamp'),
+                                'message_id': message.get('id'),
+                                'source': 'web_chat'
+                            }
+                        )
+
+                        if analysis['success']:
+                            decision = analysis['recommendation']
+                            results['decisions'].append({
+                                'content_preview': message['content'][:50] + '...',
+                                'memory_type': decision['memory_type'],
+                                'importance': decision['importance'],
+                                'reasoning': decision['reasoning']
+                            })
+
+                            # Store based on LLM decision
+                            if decision['memory_type'] == 'graph':
+                                store_result = await memory_tools["store_graph_memory"](
+                                    content=message['content'],
+                                    importance=decision['importance'],
+                                    metadata={
+                                        'role': message.get('type', 'user'),
+                                        'timestamp': message.get('timestamp'),
+                                        'source': 'web_chat',
+                                        'ai_classified': True
+                                    }
+                                )
+                            else:
+                                store_result = await memory_tools["store_vector_memory"](
+                                    content=message['content'],
+                                    importance=decision['importance'],
+                                    tags=decision['tags'],
+                                    metadata={
+                                        'role': message.get('type', 'user'),
+                                        'timestamp': message.get('timestamp'),
+                                        'source': 'web_chat',
+                                        'ai_classified': True
+                                    }
+                                )
+
+                            if store_result['success']:
+                                results['memories_stored'] += 1
+
+                        results['total_processed'] += 1
+
+                    # Force memory update if requested
+                    if force_update:
+                        update_result = await memory_tools["update_memory_now"](force=True)
+                        results['update_result'] = update_result
+
+                    return results
+
+                finally:
+                    await memory_manager.close()
+
+            # Run the async function
+            result = asyncio.run(process_conversation())
+
+            return jsonify({
+                'success': True,
+                'message': f'Processed {result["total_processed"]} messages, stored {result["memories_stored"]} memories',
+                'details': result
+            })
+
+        except ImportError as e:
+            # Fallback to legacy memory system
+            try:
+                from src.services.kuzu_memory_service import KuzuMemoryService
+
+                async def fallback_process():
+                    # Use the existing memory service as fallback
+                    memory_service = KuzuMemoryService(locrit_name)
+
+                    # Simple storage using the legacy system
+                    stored_count = 0
+                    for message in messages:
+                        if not message.get('content', '').strip():
+                            continue
+
+                        # Store message in legacy format
+                        role = message.get('type', 'user')
+                        content = message['content']
+                        session_id = f"web_chat_{locrit_name}"
+
+                        await memory_service.save_message(role, content, session_id)
+                        stored_count += 1
+
+                    return {
+                        'total_processed': len(messages),
+                        'memories_stored': stored_count,
+                        'method': 'legacy_kuzu'
+                    }
+
+                # Run the fallback process
+                result = asyncio.run(fallback_process())
+
+                return jsonify({
+                    'success': True,
+                    'message': f'Stored {result["memories_stored"]} messages using legacy system',
+                    'fallback': True,
+                    'details': result
+                })
+
+            except Exception as fallback_error:
+                return jsonify({
+                    'error': 'Both new and legacy memory systems failed',
+                    'new_system_error': str(e),
+                    'legacy_system_error': str(fallback_error)
+                }), 500
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@memory_bp.route('/api/v1/locrits/<locrit_name>/memory/ai-search', methods=['GET'])
+def ai_search_memory(locrit_name):
+    """Search memory using the AI-powered modular system"""
+    try:
+        # Verify the Locrit exists
+        settings = config_service.get_locrit_settings(locrit_name)
+        if not settings:
+            return jsonify({'error': 'Locrit non trouvé'}), 404
+
+        query = request.args.get('q', '')
+        limit = min(int(request.args.get('limit', 10)), 50)
+        search_strategy = request.args.get('strategy', 'auto')
+
+        if not query:
+            return jsonify({'error': 'Paramètre de recherche requis'}), 400
+
+        try:
+            import asyncio
+            import sys
+            import os
+
+            # Add the project root to Python path
+            project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
+            if project_root not in sys.path:
+                sys.path.insert(0, project_root)
+
+            from src.services.memory import create_memory_system
+
+            async def search_memories():
+                # Initialize memory system
+                memory_manager, memory_tools = await create_memory_system(
+                    locrit_name=locrit_name,
+                    config_path="config/memory.yaml"
+                )
+
+                try:
+                    # Search using AI-powered comprehensive search
+                    search_result = await memory_tools["search_all_memory"](
+                        query=query,
+                        limit=limit,
+                        strategy=search_strategy
+                    )
+
+                    return search_result
+
+                finally:
+                    await memory_manager.close()
+
+            # Run the async function
+            result = asyncio.run(search_memories())
+
+            if result['success']:
+                return jsonify({
+                    'query': query,
+                    'strategy': result['strategy'],
+                    'results': result['results'],
+                    'total': result['total_results']
+                })
+            else:
+                return jsonify({'error': 'Search failed'}), 500
+
+        except ImportError as e:
+            # Fallback to legacy search
+            results = asyncio.run(memory_manager.search_memories(locrit_name, query, limit))
+            return jsonify({
+                'query': query,
+                'results': results,
+                'total': len(results),
+                'fallback': True
+            })
+
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@memory_bp.route('/api/v1/locrits/<locrit_name>/memory/status', methods=['GET'])
+def get_memory_system_status(locrit_name):
+    """Get comprehensive status of the memory system"""
+    try:
+        # Verify the Locrit exists
+        settings = config_service.get_locrit_settings(locrit_name)
+        if not settings:
+            return jsonify({'error': 'Locrit non trouvé'}), 404
+
+        try:
+            import asyncio
+            import sys
+            import os
+
+            # Add the project root to Python path
+            project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '../..'))
+            if project_root not in sys.path:
+                sys.path.insert(0, project_root)
+
+            from src.services.memory import create_memory_system
+
+            async def get_status():
+                # Initialize memory system
+                memory_manager, memory_tools = await create_memory_system(
+                    locrit_name=locrit_name,
+                    config_path="config/memory.yaml"
+                )
+
+                try:
+                    # Get comprehensive status
+                    status_result = await memory_tools["get_memory_status"]()
+                    return status_result
+
+                finally:
+                    await memory_manager.close()
+
+            # Run the async function
+            result = asyncio.run(get_status())
+
+            return jsonify(result)
+
+        except ImportError as e:
+            return jsonify({
+                'error': 'New memory system not available',
+                'fallback_status': 'legacy_system_active',
+                'details': str(e)
+            }), 500
 
     except Exception as e:
         return jsonify({'error': str(e)}), 500

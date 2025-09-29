@@ -37,7 +37,8 @@ Dans les premières étapes on est focus sur :
 
 # Code instructions : 
 
-For Python use the venv in  .venv directory.
+
+To run the backend use the venv from .venv and run   python web_app.py
 
 Do not write code in the documentations. 
 

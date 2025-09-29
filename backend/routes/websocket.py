@@ -10,6 +10,7 @@ from flask_socketio import Namespace, emit, join_room, leave_room
 from src.services.config_service import config_service
 from src.services.ui_logging_service import ui_logging_service
 from src.services.memory_manager_service import memory_manager
+from src.services.comprehensive_logging_service import comprehensive_logger, LogLevel, LogCategory
 
 # Logger pour l'application web
 logger = ui_logging_service.logger
@@ -21,41 +22,87 @@ class ChatNamespace(Namespace):
     def on_connect(self):
         """Handle client connection"""
         logger.info(f"Client connected to chat namespace")
+
+        # Log WebSocket connection
+        comprehensive_logger.log_websocket_event(
+            event_type="connect",
+            data={"namespace": "chat"}
+        )
+
         emit('connected', {'status': 'connected'})
 
     def on_disconnect(self):
         """Handle client disconnection"""
         logger.info(f"Client disconnected from chat namespace")
 
+        # Log WebSocket disconnection
+        comprehensive_logger.log_websocket_event(
+            event_type="disconnect",
+            data={"namespace": "chat"}
+        )
+
     def on_join_chat(self, data):
-        """Handle joining a chat room for a specific Locrit"""
+        """Handle joining a chat room for a specific Locrit and session"""
         locrit_name = data.get('locrit_name')
-        if locrit_name:
-            room = f"chat_{locrit_name}"
+        session_id = data.get('session_id')
+
+        if locrit_name and session_id:
+            # Create unique room for this conversation session
+            room = f"chat_{locrit_name}_{session_id}"
             join_room(room)
             logger.info(f"Client joined chat room: {room}")
-            emit('joined_chat', {'locrit_name': locrit_name})
+
+            # Log WebSocket join chat event
+            comprehensive_logger.log_websocket_event(
+                event_type="join_chat",
+                locrit_name=locrit_name,
+                session_id=session_id,
+                data={"room": room}
+            )
+
+            emit('joined_chat', {
+                'locrit_name': locrit_name,
+                'session_id': session_id,
+                'room': room
+            })
         else:
-            emit('error', {'message': 'Locrit name required'})
+            # Log failed join chat attempt
+            comprehensive_logger.log_websocket_event(
+                event_type="join_chat_failed",
+                data={"reason": "Missing locrit_name or session_id"}
+            )
+
+            emit('error', {'message': 'Locrit name and session ID required'})
 
     def on_leave_chat(self, data):
         """Handle leaving a chat room"""
         locrit_name = data.get('locrit_name')
-        if locrit_name:
-            room = f"chat_{locrit_name}"
+        session_id = data.get('session_id')
+        if locrit_name and session_id:
+            room = f"chat_{locrit_name}_{session_id}"
             leave_room(room)
             logger.info(f"Client left chat room: {room}")
-            emit('left_chat', {'locrit_name': locrit_name})
+
+            # Log WebSocket leave chat event
+            comprehensive_logger.log_websocket_event(
+                event_type="leave_chat",
+                locrit_name=locrit_name,
+                session_id=session_id,
+                data={"room": room}
+            )
+
+            emit('left_chat', {'locrit_name': locrit_name, 'session_id': session_id})
 
     def on_chat_message(self, data):
         """Handle sending a message to a Locrit"""
         try:
             locrit_name = data.get('locrit_name')
+            session_id = data.get('session_id')
             message = data.get('message', '').strip()
             stream = data.get('stream', False)
 
-            if not locrit_name or not message:
-                emit('error', {'message': 'Locrit name and message required'})
+            if not locrit_name or not session_id or not message:
+                emit('error', {'message': 'Locrit name, session ID and message required'})
                 return
 
             # Verify Locrit exists and is active
@@ -87,9 +134,9 @@ class ChatNamespace(Namespace):
                 emit('error', {'message': 'Ollama service unavailable'})
                 return
 
-            # Set up session and user ID for memory
+            # Set up user ID for memory (use session_id from frontend)
             user_id = session.get('user_name', 'web_user') if 'user_name' in session else 'websocket_user'
-            session_id = f"websocket_{user_id}_{locrit_name}"
+            # Use the session_id provided by the frontend to maintain conversation context
 
             # Save user message to memory
             try:
@@ -161,6 +208,7 @@ class ChatNamespace(Namespace):
                                 full_response += content
                                 emit('chat_chunk', {
                                     'locrit_name': locrit_name,
+                                    'session_id': session_id,
                                     'content': content,
                                     'timestamp': datetime.now().isoformat()
                                 })
@@ -180,6 +228,7 @@ class ChatNamespace(Namespace):
                     # Send completion signal
                     emit('chat_complete', {
                         'locrit_name': locrit_name,
+                        'session_id': session_id,
                         'timestamp': datetime.now().isoformat()
                     })
                 else:
@@ -202,13 +251,18 @@ class ChatNamespace(Namespace):
 
                     emit('chat_response', {
                         'locrit_name': locrit_name,
+                        'session_id': session_id,
                         'response': full_response,
                         'timestamp': datetime.now().isoformat()
                     })
 
             except Exception as e:
                 logger.error(f"Error streaming chat response: {str(e)}")
-                emit('error', {'message': f'Error generating response: {str(e)}'})
+                emit('error', {
+                    'locrit_name': locrit_name,
+                    'session_id': session_id,
+                    'message': f'Error generating response: {str(e)}'
+                })
 
         except Exception as e:
             logger.error(f"Error in send_message: {str(e)}")

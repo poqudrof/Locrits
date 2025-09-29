@@ -8,6 +8,7 @@ from flask import Blueprint, render_template, request, session, flash, redirect,
 from backend.middleware.auth import login_required
 from src.services.config_service import config_service
 from src.services.ui_logging_service import ui_logging_service
+from src.services.comprehensive_logging_service import comprehensive_logger, LogLevel, LogCategory
 from langchain_community.chat_models import ChatOllama
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 from langchain_core.callbacks import StreamingStdOutCallbackHandler
@@ -41,24 +42,55 @@ def chat_with_locrit(locrit_name):
 
 
 @chat_bp.route('/api/locrits/<locrit_name>/chat', methods=['POST'])
-def api_chat_with_locrit(locrit_name):
+async def api_chat_with_locrit(locrit_name):
     """API pour envoyer un message à un Locrit"""
     try:
+        # Start operation tracking
+        operation_id = comprehensive_logger.start_operation(f"api_chat_{locrit_name}")
+
         # Vérifier que le Locrit existe et est actif
         settings = config_service.get_locrit_settings(locrit_name)
         if not settings:
+            comprehensive_logger.log_api_request(
+                endpoint=f"/api/locrits/{locrit_name}/chat",
+                method="POST",
+                locrit_name=locrit_name,
+                status_code=404,
+                error="Locrit not found"
+            )
             return jsonify({'error': 'Locrit non trouvé'}), 404
 
         if not settings.get('active', False):
+            comprehensive_logger.log_api_request(
+                endpoint=f"/api/locrits/{locrit_name}/chat",
+                method="POST",
+                locrit_name=locrit_name,
+                status_code=400,
+                error="Locrit inactive"
+            )
             return jsonify({'error': 'Locrit inactif'}), 400
 
         # Récupérer le message
         data = request.get_json()
         if not data or 'message' not in data:
+            comprehensive_logger.log_api_request(
+                endpoint=f"/api/locrits/{locrit_name}/chat",
+                method="POST",
+                locrit_name=locrit_name,
+                status_code=400,
+                error="Message required"
+            )
             return jsonify({'error': 'Message requis'}), 400
 
         message = data['message'].strip()
         if not message:
+            comprehensive_logger.log_api_request(
+                endpoint=f"/api/locrits/{locrit_name}/chat",
+                method="POST",
+                locrit_name=locrit_name,
+                status_code=400,
+                error="Empty message"
+            )
             return jsonify({'error': 'Message vide'}), 400
 
         # Configurer le modèle du Locrit
@@ -117,26 +149,12 @@ def api_chat_with_locrit(locrit_name):
                 logger.warning(f"Erreur récupération historique conversation: {e}")
                 # Continuer sans historique si la récupération échoue
 
-            # Initialiser ChatOllama avec LangChain
-            chat_model = ChatOllama(
-                model=model,
-                base_url=ollama_service.base_url,
-                temperature=0.7
+            # Use the Ollama service directly with proper Locrit context
+            response = await ollama_service.chat(
+                message=message,
+                system_prompt=system_prompt,
+                locrit_name=locrit_name
             )
-
-            # Préparer les messages: système + historique + message actuel
-            messages = [
-                SystemMessage(content=system_prompt)
-            ]
-
-            # Ajouter l'historique de conversation
-            messages.extend(conversation_history)
-
-            # Ajouter le message actuel
-            messages.append(HumanMessage(content=message))
-
-            # Générer la réponse
-            response = chat_model.invoke(messages)
 
             # Sauvegarder la réponse dans la mémoire du Locrit
             try:
@@ -150,6 +168,23 @@ def api_chat_with_locrit(locrit_name):
             except Exception as e:
                 logger.warning(f"Erreur sauvegarde réponse: {e}")
 
+            # End operation tracking
+            duration_ms = comprehensive_logger.end_operation(operation_id)
+
+            # Log successful API request
+            comprehensive_logger.log_api_request(
+                endpoint=f"/api/locrits/{locrit_name}/chat",
+                method="POST",
+                locrit_name=locrit_name,
+                duration_ms=duration_ms,
+                status_code=200,
+                data={
+                    "model": model,
+                    "message_length": len(message),
+                    "response_length": len(response.content)
+                }
+            )
+
             return jsonify({
                 'success': True,
                 'response': response.content,
@@ -158,11 +193,39 @@ def api_chat_with_locrit(locrit_name):
             })
 
         except Exception as e:
+            # End operation tracking for failed request
+            duration_ms = comprehensive_logger.end_operation(operation_id)
+
             logger.error(f"Erreur lors de la génération de la réponse: {str(e)}")
+
+            # Log failed API request
+            comprehensive_logger.log_api_request(
+                endpoint=f"/api/locrits/{locrit_name}/chat",
+                method="POST",
+                locrit_name=locrit_name,
+                duration_ms=duration_ms,
+                status_code=500,
+                error=str(e)
+            )
+
             return jsonify({'error': f'Erreur de génération: {str(e)}'}), 500
 
     except Exception as e:
+        # End operation tracking for failed request
+        if 'operation_id' in locals():
+            duration_ms = comprehensive_logger.end_operation(operation_id)
+
         logger.error(f"Erreur dans l'API chat: {str(e)}")
+
+        # Log failed API request
+        comprehensive_logger.log_api_request(
+            endpoint=f"/api/locrits/{locrit_name}/chat",
+            method="POST",
+            locrit_name=locrit_name,
+            status_code=500,
+            error=str(e)
+        )
+
         return jsonify({'error': str(e)}), 500
 
 

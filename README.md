@@ -1,6 +1,6 @@
 # Locrit
 
-Un système de gestion de chatbots autonomes avec interfaces TUI et Web. Chaque "locrit" possède sa propre identité, mémoire et capacités d'agentivité.
+Un système de gestion de chatbots autonomes avec interface Web. Chaque "locrit" possède sa propre identité, mémoire et capacités d'agentivité.
 
 ## 🚀 Démarrage rapide
 
@@ -17,16 +17,6 @@ python web_app.py
 
 # 4. Ouvrir dans votre navigateur
 # http://localhost:5000
-```
-
-### 💻 Interface Terminal (TUI)
-```bash
-# 1. Démarrage rapide
-./start.sh
-
-# 2. Ou manuellement
-source .venv/bin/activate
-python main.py
 ```
 
 ### 🎯 Frontend React (Optionnel)
@@ -49,7 +39,6 @@ npm run dev
 ## ✨ Fonctionnalités implémentées
 
 ### Core Services ✅
-- 🖥️ **Interface TUI** avec Textual - Navigation intuitive et événements asynchrones
 - 🌐 **Interface Web** moderne avec Flask - Gestion complète des Locrits via navigateur
 - 🔍 **Recherche web** intégrée via DuckDuckGo - Service fonctionnel
 - 🤖 **Chat avec LLM** via Ollama - Client asynchrone avec gestion des modèles
@@ -70,7 +59,6 @@ npm run dev
 ### Architecture actuelle
 ```
 src/
-├── app.py                 # Interface TUI Textual ✅
 ├── services/
 │   ├── locrit_manager.py  # Coordinateur central 🔧
 │   ├── ollama_service.py  # Client LLM asynchrone ✅
@@ -130,18 +118,6 @@ Si vous rencontrez des erreurs CORS entre le frontend et le backend :
 Le backend est configuré pour accepter les requêtes cross-origin depuis les ports de développement standard.
 
 ## 🎮 Utilisation
-
-### Interface Terminal (TUI)
-- **Champ de saisie** : Entrez vos requêtes/messages
-- **🔍 Rechercher** : Recherche web avec analyse
-- **🤖 Chat** : Discussion avec le LLM (Entrée = Chat par défaut)
-- **💾 Statut** : Vérifier l'état des services
-- **🧠 Mémoire** : Rechercher dans l'historique
-- **🗑️ Effacer** : Nettoyer le journal
-
-#### Raccourcis clavier TUI
-- `d` : Basculer mode sombre/clair
-- `q` : Quitter l'application
 
 ### Interface Web 🌐
 
@@ -209,10 +185,7 @@ locrit/
 │   ├── vite.config.js  # Configuration Vite
 │   ├── src/            # Code source React
 │   └── public/         # Assets publics
-├── src/                # Code source TUI
-│   ├── app.py          # Interface TUI principale
-│   ├── ui/             # Interfaces utilisateur
-│   │   └── screens/    # Écrans TUI
+├── src/                # Code source
 │   └── services/       # Services backend
 │       ├── locrit_manager.py     # Coordinateur principal
 │       ├── ollama_service.py     # Connexion LLM
@@ -236,21 +209,12 @@ locrit/
 ├── data/               # Base de données SQLite
 ├── admin/              # Fichiers admin Firebase SDK
 ├── web_app.py          # Point d'entrée backend Flask ✨
-├── main.py             # Point d'entrée TUI
-├── start.sh            # Script de lancement TUI
 ├── config.yaml         # Configuration principale
 ├── package.json        # Métadonnées projet Node.js
 └── requirements.txt    # Dépendances Python
 ```
 
 ## 🧠 Capacités actuelles
-
-### Interface Terminal (TUI)
-- ✅ **Recherche autonome** avec analyse contextuelle
-- ✅ **Mémoire conversationnelle** avec recherche sémantique
-- ✅ **Chat intelligent** (si Ollama connecté)
-- ✅ **Interface responsive** et intuitive
-- ✅ **Monitoring système** en temps réel
 
 ### Interface Web 🌐
 - ✅ **Gestion complète des Locrits** via navigateur
@@ -277,7 +241,7 @@ git clone <repository-url>
 cd locrit
 ```
 
-2. **Configuration Python (Backend + TUI)**
+2. **Configuration Python (Backend)**
 ```bash
 # L'environnement virtuel est déjà configuré
 source .venv/bin/activate
@@ -300,7 +264,6 @@ ollama run llama3.2
 ## 🔧 Dépendances installées
 
 ### Interface et Frameworks
-- **textual** : Framework TUI (Terminal User Interface)
 - **flask** : Framework web moderne pour l'interface web ✨
 - **fastapi** : API REST/WebSocket pour communication inter-locrits
 

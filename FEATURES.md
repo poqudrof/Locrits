@@ -16,7 +16,6 @@ Locrit est un système de gestion de chatbots autonomes appelés "locrits". Chaq
 ## État d'implémentation (Septembre 2025)
 
 ### ✅ Services Core (Fonctionnels)
-- **Interface TUI** : Application Textual complète avec gestion événements asynchrones
 - **LocritManager** : Coordinateur central pour tous les services
 - **OllamaService** : Client asynchrone avec gestion modèles et connexion
 - **SearchService** : Intégration DuckDuckGo pour recherche web autonome
@@ -39,7 +38,6 @@ Locrit est un système de gestion de chatbots autonomes appelés "locrits". Chaq
 
 ### 📋 TODO Priorité élevée
 - Finir intégration APIService et TunnelingService dans LocritManager
-- Ajouter interface TUI pour mode serveur et tunneling
 - Implémenter recherche sémantique dans l'interface utilisateur
 - Tests de communication WebSocket entre locrits
 
@@ -54,7 +52,7 @@ Locrit est un système de gestion de chatbots autonomes appelés "locrits". Chaq
 ## Modes de fonctionnement
 
 ### 1. Chat classique avec utilisateur ✅
-Interface TUI directe pour interaction avec le locrit via Textual.
+Interface directe pour interaction avec le locrit.
 **État** : Fonctionnel avec mémoire persistante et recherche web.
 
 ### 2. Mode serveur (API) ✅ (Implémenté)
@@ -314,7 +312,7 @@ Capacités d'action multi-étapes :
   - ✅ Mémoire initialisée  
   - ✅ Recherche web active
   - ✅ Services API prêts
-- **Interface TUI** : Navigation complète avec boutons pour toutes les fonctions
+- **Interface** : Navigation complète avec boutons pour toutes les fonctions
 
 ### Accès distant ✅ (Implémenté)
 - **Tunneling automatique** : Intégration avec localhost.run et pinggy.io
@@ -350,7 +348,6 @@ Capacités d'action multi-étapes :
 ## État de développement (Mis à jour - Septembre 2025)
 
 ### ✅ Implémenté et fonctionnel
-- **Interface TUI complète** avec Textual - Navigation et événements asynchrones
 - **Services core** : Ollama, Search, Memory avec SQLite
 - **Architecture modulaire** : LocritManager pour coordination centrale
 - **Mémoire hybride** : SQLite + embeddings vectoriels FAISS  
@@ -365,16 +362,13 @@ Capacités d'action multi-étapes :
 
 ### 📋 Prochaines priorités
 - Finalisation intégration APIService et TunnelingService
-- Interface TUI pour contrôler mode serveur et tunnels  
 - Tests end-to-end de communication entre locrits distants
 - Documentation utilisateur avec exemples pratiques
 
 ### 🏗️ Architecture technique V1 - FINALISÉE
 ```
 Locrit/
-├── main.py                    # Point d'entrée ✅
 ├── src/
-│   ├── app.py                # TUI Textual complète ✅  
 │   └── services/
 │       ├── locrit_manager.py # Coordinateur central ✅
 │       ├── ollama_service.py # Client LLM ✅
@@ -446,7 +440,6 @@ Locrit/
 
 ## Technologies clés
 
-- **Textual** : Interface utilisateur TUI
 - **Ollama** : Serveur de modèles de langage
 - **SQLite** : Base de données locale
 - **FAISS/pgvector** : Index vectoriel pour embeddings

@@ -18,6 +18,7 @@ from backend.routes.api.v1 import api_v1_bp
 from backend.routes.errors import errors_bp
 from backend.routes.websocket import chat_namespace
 from src.services.ui_logging_service import ui_logging_service
+from src.services.comprehensive_logging_service import comprehensive_logger
 
 
 def create_app(config_name='default'):
@@ -50,8 +51,10 @@ def create_app(config_name='default'):
 
     CORS(app, **cors_config)
 
-    # Initialize logger
+    # Initialize loggers
     logger = ui_logging_service.logger
+    # Also initialize comprehensive logging for system events
+    comprehensive_logger.log_system_event("app_startup", "Flask application initializing")
 
     # Register blueprints
     app.register_blueprint(auth_bp)
@@ -87,6 +90,7 @@ def run_app():
     logger = ui_logging_service.logger
 
     logger.info(f"Démarrage de l'interface web sur http://{host}:{port}")
+    comprehensive_logger.log_system_event("web_server_start", f"Web interface starting on http://{host}:{port}")
     print(f"🌐 Interface web Locrit démarrée sur http://{host}:{port}")
 
     # Run the app with socketio

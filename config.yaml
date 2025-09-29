@@ -49,14 +49,14 @@ locrits:
         locrits: true
         platform: false
       public_address: bob.dev.local
-      updated_at: '2025-09-27T19:59:00.932165+00:00'
+      updated_at: '2025-09-28T20:53:26.955800+00:00'
     Locrit root:
       access_to:
         full_memory: false
         llm_info: true
         logs: true
         quick_memory: true
-      active: false
+      active: true
       created_at: '2025-09-14T18:57:16.743340'
       description: Le premire locrit !
       ollama_model: llama3.1:8b-instruct-q3_K_M
@@ -67,7 +67,7 @@ locrits:
         locrits: true
         platform: false
       public_address: ''
-      updated_at: '2025-09-27T12:41:16.172093+00:00'
+      updated_at: '2025-09-28T20:53:28.917039+00:00'
     Marie Recherche:
       access_to:
         full_memory: true
@@ -110,7 +110,7 @@ logging:
   max_file_size: 10MB
 memory:
   database_path: data/locrit_memory.db
-  embedding_model: all-MiniLM-L6-v2
+  embedding_model: nomic-embed-text
   max_messages: 10000
   vector_index_path: data/vector_index.faiss
 network:

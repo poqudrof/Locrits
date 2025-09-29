@@ -72,7 +72,7 @@ Un nouveau bouton **🔐 Auth** a été ajouté dans l'interface principale :
    - Gestion des erreurs et tokens
 
 2. **`AuthScreen`** (`src/ui/auth_screen.py`)
-   - Interface TUI pour l'authentification
+   - Interface pour l'authentification
    - Gestion des interactions utilisateur
    - Validation des formulaires
 

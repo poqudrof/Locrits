@@ -6,6 +6,7 @@ This service handles the creation and routing of memory requests to individual L
 from typing import Dict, Optional, Any, List
 from .kuzu_memory_service import KuzuMemoryService
 from .config_service import config_service
+from .comprehensive_logging_service import comprehensive_logger, LogLevel, LogCategory
 
 
 class MemoryManagerService:
@@ -100,15 +101,51 @@ class MemoryManagerService:
             return None
 
         try:
-            return await memory_service.save_message(
+            # Start operation tracking
+            operation_id = comprehensive_logger.start_operation(f"memory_save_{locrit_name}")
+
+            result = await memory_service.save_message(
                 role=role,
                 content=content,
                 session_id=session_id,
                 user_id=user_id,
                 metadata=metadata
             )
+
+            # End operation tracking
+            duration_ms = comprehensive_logger.end_operation(operation_id)
+
+            # Log the memory save operation
+            comprehensive_logger.log_memory_save(
+                content=content,
+                locrit_name=locrit_name,
+                memory_type="message",
+                session_id=session_id,
+                user_id=user_id,
+                metadata=metadata,
+                success=result is not None,
+                error=None if result else "Save returned None"
+            )
+
+            return result
         except Exception as e:
+            # End operation tracking for failed operation
+            duration_ms = comprehensive_logger.end_operation(operation_id)
+
             print(f"Error saving message for {locrit_name}: {e}")
+
+            # Log the failed memory save operation
+            comprehensive_logger.log_memory_save(
+                content=content,
+                locrit_name=locrit_name,
+                memory_type="message",
+                session_id=session_id,
+                user_id=user_id,
+                metadata=metadata,
+                success=False,
+                error=str(e)
+            )
+
             return None
 
     async def get_conversation_history(self, locrit_name: str, session_id: str,
@@ -129,9 +166,41 @@ class MemoryManagerService:
             return []
 
         try:
-            return await memory_service.get_conversation_history(session_id, limit)
+            # Start operation tracking
+            operation_id = comprehensive_logger.start_operation(f"memory_recall_{locrit_name}")
+
+            result = await memory_service.get_conversation_history(session_id, limit)
+
+            # End operation tracking
+            duration_ms = comprehensive_logger.end_operation(operation_id)
+
+            # Log the memory recall operation
+            comprehensive_logger.log_memory_recall(
+                query=f"session:{session_id}",
+                locrit_name=locrit_name,
+                results_count=len(result),
+                session_id=session_id,
+                duration_ms=duration_ms,
+                search_type="conversation_history"
+            )
+
+            return result
         except Exception as e:
+            # End operation tracking for failed operation
+            duration_ms = comprehensive_logger.end_operation(operation_id)
+
             print(f"Error getting conversation history for {locrit_name}: {e}")
+
+            # Log the failed memory recall operation
+            comprehensive_logger.log_memory_recall(
+                query=f"session:{session_id}",
+                locrit_name=locrit_name,
+                results_count=0,
+                session_id=session_id,
+                duration_ms=duration_ms,
+                search_type="conversation_history"
+            )
+
             return []
 
     async def search_memories(self, locrit_name: str, query: str,
@@ -152,9 +221,39 @@ class MemoryManagerService:
             return []
 
         try:
-            return await memory_service.search_memories(query, limit)
+            # Start operation tracking
+            operation_id = comprehensive_logger.start_operation(f"memory_search_{locrit_name}")
+
+            result = await memory_service.search_memories(query, limit)
+
+            # End operation tracking
+            duration_ms = comprehensive_logger.end_operation(operation_id)
+
+            # Log the memory search operation
+            comprehensive_logger.log_memory_search(
+                query=query,
+                locrit_name=locrit_name,
+                results_count=len(result),
+                search_strategy="auto",
+                duration_ms=duration_ms
+            )
+
+            return result
         except Exception as e:
+            # End operation tracking for failed operation
+            duration_ms = comprehensive_logger.end_operation(operation_id)
+
             print(f"Error searching memories for {locrit_name}: {e}")
+
+            # Log the failed memory search operation
+            comprehensive_logger.log_memory_search(
+                query=query,
+                locrit_name=locrit_name,
+                results_count=0,
+                search_strategy="auto",
+                duration_ms=duration_ms
+            )
+
             return []
 
     async def get_full_memory_summary(self, locrit_name: str) -> Dict[str, Any]:
@@ -177,8 +276,31 @@ class MemoryManagerService:
             print(f"Error getting memory summary for {locrit_name}: {e}")
             return {"error": str(e)}
 
+    async def get_concept_details(self, locrit_name: str, concept_name: str,
+                                 concept_type: str = None) -> Optional[Dict]:
+        """
+        Get detailed information about a specific concept for a Locrit.
+
+        Args:
+            locrit_name: Name of the Locrit
+            concept_name: Name of the concept
+            concept_type: Type of the concept (optional filter)
+
+        Returns:
+            Dictionary with concept details or None if not found
+        """
+        memory_service = await self.get_memory_service(locrit_name)
+        if not memory_service:
+            return None
+
+        try:
+            return await memory_service.get_concept_details(concept_name, concept_type)
+        except Exception as e:
+            print(f"Error getting concept details for {locrit_name}: {e}")
+            return None
+
     async def get_related_concepts(self, locrit_name: str, concept_name: str,
-                                 depth: int = 2) -> List[Dict]:
+                                  depth: int = 2) -> List[Dict]:
         """
         Get related concepts for a specific Locrit.
 
@@ -296,9 +418,43 @@ class MemoryManagerService:
             return False
 
         try:
-            return await memory_service.delete_message(message_id)
+            # Log the memory edit operation
+            comprehensive_logger.log_memory_edit(
+                operation="delete_message",
+                target_id=message_id,
+                locrit_name=locrit_name,
+                success=True,
+                user_id=None,
+                details={"message_id": message_id}
+            )
+
+            result = await memory_service.delete_message(message_id)
+
+            if not result:
+                # Log failed deletion
+                comprehensive_logger.log_memory_edit(
+                    operation="delete_message",
+                    target_id=message_id,
+                    locrit_name=locrit_name,
+                    success=False,
+                    error="Delete returned False",
+                    details={"message_id": message_id}
+                )
+
+            return result
         except Exception as e:
             print(f"Error deleting message for {locrit_name}: {e}")
+
+            # Log the failed memory edit operation
+            comprehensive_logger.log_memory_edit(
+                operation="delete_message",
+                target_id=message_id,
+                locrit_name=locrit_name,
+                success=False,
+                error=str(e),
+                details={"message_id": message_id}
+            )
+
             return False
 
     async def edit_message(self, locrit_name: str, message_id: str, new_content: str) -> bool:

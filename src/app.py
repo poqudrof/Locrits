@@ -13,6 +13,7 @@ from .services.auth_service import AuthService
 from .services.config_service import config_service
 from .services.firestore_admin_service import firestore_admin_service
 from .services.session_service import session_service
+from .services.comprehensive_logging_service import comprehensive_logger, LogLevel, LogCategory
 from .ui.auth_screen import AuthScreen
 from .ui.screens import HomeScreen
 
@@ -103,6 +104,13 @@ class LocritApp(App):
     async def _restore_session(self, session_data: dict):
         """Restaure une session Firebase sauvegardée"""
         try:
+            # Log session restoration attempt
+            comprehensive_logger.log_system_event(
+                "session_restore_attempt",
+                "Attempting to restore user session",
+                data={"has_session_data": session_data is not None}
+            )
+
             if not session_data:
                 raise ValueError("Session data is None")
 
@@ -161,6 +169,17 @@ class LocritApp(App):
             home_screen = HomeScreen(session_data)
             self.push_screen(home_screen)
             print("🔍 Debug: Après push_screen")
+
+            # Log successful session restoration
+            comprehensive_logger.log_system_event(
+                "session_restore_success",
+                f"Session successfully restored for user {session_data.get('email', 'anonymous')}",
+                data={
+                    "user_id": session_data.get("user_id"),
+                    "email": session_data.get("email"),
+                    "auth_type": "session_restore"
+                }
+            )
             
         except Exception as e:
             self.notify(f"❌ Erreur restauration session: {str(e)}")
@@ -169,6 +188,13 @@ class LocritApp(App):
             traceback.print_exc()
             session_service.clear_session()
             self._show_auth_screen()
+
+            # Log failed session restoration
+            comprehensive_logger.log_error(
+                error=e,
+                context="Session restoration",
+                additional_data={"error_type": "session_restore_failed"}
+            )
 
     async def _auto_authenticate(self):
         """Authentification automatique anonyme"""

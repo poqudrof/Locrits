@@ -236,27 +236,14 @@ class GraphMemoryService:
     
     async def analyze_text_for_concepts(self, text: str) -> List[str]:
         """
-        Analyse un texte pour extraire des concepts.
-        
-        Args:
-            text: Texte à analyser
-            
+        This function is deprecated.
+        Concept extraction is now handled by the LLM through the new modular memory system.
+
         Returns:
-            Liste des concepts extraits
+            Empty list - LLM decides memory storage through memory tools
         """
-        # Extraction simple de concepts (à améliorer avec NLP)
-        import re
-        
-        # Mots-clés importants (à étendre)
-        keywords = re.findall(r'\b[A-Z][a-z]+\b', text)  # Mots avec majuscule
-        
-        # Filtrer et nettoyer
-        concepts = []
-        for keyword in keywords:
-            if len(keyword) > 2 and keyword.lower() not in ['The', 'And', 'But', 'For']:
-                concepts.append(keyword.lower())
-        
-        return list(set(concepts))
+        # Concept extraction is now LLM-driven through the modular memory system
+        return []
     
     async def learn_from_conversation(self, user_message: str, assistant_response: str) -> bool:
         """

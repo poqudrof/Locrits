@@ -6,6 +6,7 @@ import asyncio
 from typing import Optional, Dict, Any, AsyncGenerator
 import ollama
 from ollama import AsyncClient
+from .comprehensive_logging_service import comprehensive_logger, LogLevel, LogCategory
 
 
 class OllamaService:
@@ -39,16 +40,30 @@ class OllamaService:
             response = await self.client.list()
             self.available_models = [model['name'] for model in response['models']]
             self.is_connected = True
-            
+
             # Sélectionner un modèle par défaut si disponible
             if self.available_models and not self.current_model:
                 self.current_model = self.available_models[0]
-            
+
+            # Log successful connection
+            comprehensive_logger.log_system_event(
+                "ollama_connection_success",
+                f"Connected to Ollama at {self.host}:{self.port}, found {len(self.available_models)} models"
+            )
+
             return True
         except Exception as e:
             self.is_connected = False
             self.available_models = []
             print(f"Erreur de connexion Ollama : {e}")
+
+            # Log connection failure
+            comprehensive_logger.log_error(
+                error=e,
+                context="Ollama connection test",
+                additional_data={"host": self.host, "port": self.port}
+            )
+
             return False
     
     async def disconnect(self) -> None:
@@ -71,7 +86,7 @@ class OllamaService:
             "available_models": self.available_models
         }
     
-    async def chat(self, message: str, system_prompt: Optional[str] = None) -> str:
+    async def chat(self, message: str, system_prompt: Optional[str] = None, locrit_name: Optional[str] = None) -> str:
         """
         Envoie un message au modèle et retourne la réponse.
         
@@ -97,15 +112,49 @@ class OllamaService:
         messages.append({"role": "user", "content": message})
         
         try:
+            # Start operation tracking
+            operation_id = comprehensive_logger.start_operation("ollama_chat_request")
+
+            # Log the request
+            comprehensive_logger.log_ollama_request(
+                model=self.current_model,
+                messages=messages,
+                locrit_name=locrit_name or "system",
+                stream=False
+            )
+
             response = await self.client.chat(
                 model=self.current_model,
                 messages=messages
             )
+
+            # End operation tracking
+            duration_ms = comprehensive_logger.end_operation(operation_id)
+
+            # Log the response
+            comprehensive_logger.log_ollama_response(
+                model=self.current_model,
+                response=response['message']['content'],
+                locrit_name=locrit_name or "system",
+                duration_ms=duration_ms
+            )
+
             return response['message']['content']
         except Exception as e:
+            # End operation tracking for failed request
+            if 'operation_id' in locals():
+                duration_ms = comprehensive_logger.end_operation(operation_id)
+                comprehensive_logger.log_ollama_response(
+                    model=self.current_model,
+                    response="",
+                    locrit_name=locrit_name or "system",
+                    duration_ms=duration_ms,
+                    error=str(e)
+                )
+
             raise Exception(f"Erreur lors du chat : {e}")
     
-    async def chat_stream(self, message: str, system_prompt: Optional[str] = None) -> AsyncGenerator[str, None]:
+    async def chat_stream(self, message: str, system_prompt: Optional[str] = None, locrit_name: Optional[str] = None) -> AsyncGenerator[str, None]:
         """
         Envoie un message et retourne un stream de réponse.
         
@@ -128,6 +177,17 @@ class OllamaService:
         messages.append({"role": "user", "content": message})
         
         try:
+            # Start operation tracking
+            operation_id = comprehensive_logger.start_operation("ollama_chat_stream_request")
+
+            # Log the request
+            comprehensive_logger.log_ollama_request(
+                model=self.current_model,
+                messages=messages,
+                locrit_name=locrit_name or "system",
+                stream=True
+            )
+
             async for chunk in await self.client.chat(
                 model=self.current_model,
                 messages=messages,
@@ -135,7 +195,30 @@ class OllamaService:
             ):
                 if 'message' in chunk and 'content' in chunk['message']:
                     yield chunk['message']['content']
+
+            # End operation tracking
+            duration_ms = comprehensive_logger.end_operation(operation_id)
+
+            # Log successful streaming completion
+            comprehensive_logger.log_ollama_response(
+                model=self.current_model,
+                response="[STREAM_COMPLETED]",
+                locrit_name=locrit_name or "system",
+                duration_ms=duration_ms
+            )
+
         except Exception as e:
+            # End operation tracking for failed request
+            if 'operation_id' in locals():
+                duration_ms = comprehensive_logger.end_operation(operation_id)
+                comprehensive_logger.log_ollama_response(
+                    model=self.current_model,
+                    response="",
+                    locrit_name=locrit_name or "system",
+                    duration_ms=duration_ms,
+                    error=str(e)
+                )
+
             raise Exception(f"Erreur lors du chat stream : {e}")
     
     async def set_model(self, model_name: str) -> bool:

@@ -42,14 +42,24 @@ locrits:
       created_at: '2025-09-13T14:29:07.098618'
       description: Expert en programmation et technologies
       ollama_model: llama3.1:8b-instruct-q3_K_M
+      ollama_url: http://localhost:11434
       open_to:
         humans: true
-        internet: false
+        internet: true
         invitations: true
         locrits: true
         platform: false
-      public_address: bob.dev.local
-      updated_at: '2025-09-28T20:53:26.955800+00:00'
+      public_address: https://fb73aa2142137f.lhr.life
+      public_page:
+        avatar: 🤖
+        description: Expert en programmation et technologies. Posez-moi vos questions
+          techniques !
+        show_model_info: true
+        theme: default
+        title: Parlez avec Bob Technique
+        welcome_message: Bonjour ! Je suis Bob, un expert technique. Comment puis-je
+          vous aider aujourd'hui ?
+      updated_at: '2025-10-04T22:55:46.918406+00:00'
     Locrit root:
       access_to:
         full_memory: false
@@ -60,6 +70,7 @@ locrits:
       created_at: '2025-09-14T18:57:16.743340'
       description: Le premire locrit !
       ollama_model: llama3.1:8b-instruct-q3_K_M
+      ollama_url: http://localhost:11434
       open_to:
         humans: true
         internet: false
@@ -78,6 +89,7 @@ locrits:
       created_at: '2025-09-13T14:29:07.098617'
       description: Spécialisée dans la recherche et l'analyse
       ollama_model: llama3.1:8b-instruct-q3_K_M
+      ollama_url: http://localhost:11434
       open_to:
         humans: true
         internet: true
@@ -95,6 +107,7 @@ locrits:
       created_at: '2025-09-13T14:29:07.098610'
       description: Assistant personnel intelligent et organisé
       ollama_model: llama3.1:8b-instruct-q3_K_M
+      ollama_url: http://localhost:11434
       open_to:
         humans: true
         internet: false

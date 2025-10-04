@@ -100,17 +100,16 @@ def ollama_models():
 
 @config_bp.route('/api/ollama/status', methods=['GET'])
 def ollama_status():
-    """Récupère le statut du serveur Ollama"""
+    """
+    Récupère le statut du serveur Ollama.
+    NOTE: Cette route est deprecated car chaque Locrit a son propre serveur Ollama.
+    Utilisez /api/locrits/<locrit_name>/ollama/status à la place.
+    """
     try:
-        from src.services.ollama_service import ollama_service
-
-        # Tester la connexion rapidement
-        result = ollama_service.test_connection()
-
         return jsonify({
-            'success': result.get('success', False),
-            'status': 'connected' if result.get('success') else 'disconnected',
-            'models_count': len(result.get('models', [])) if result.get('success') else 0
+            'success': False,
+            'status': 'deprecated',
+            'error': 'Cette route est deprecated. Chaque Locrit a son propre serveur Ollama configuré.'
         })
 
     except Exception as e:
@@ -133,9 +132,11 @@ def test_ollama_connection():
         logger.info(f"URL extraite du formulaire: {test_url}")
 
         if not test_url:
-            # Fallback vers la config uniquement si aucune URL n'est fournie
-            test_url = config_service.get('ollama.base_url', 'http://localhost:11434')
-            logger.info(f"Utilisation de la config par défaut: {test_url}")
+            # No default URL - must be explicitly provided
+            return jsonify({
+                'success': False,
+                'error': 'URL Ollama requise. Chaque Locrit doit avoir son propre serveur Ollama configuré.'
+            }), 400
 
         # Nettoyer l'URL et s'assurer qu'elle se termine correctement
         test_url = test_url.rstrip('/')

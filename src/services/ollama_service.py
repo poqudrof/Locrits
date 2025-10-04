@@ -11,18 +11,28 @@ from .comprehensive_logging_service import comprehensive_logger, LogLevel, LogCa
 
 class OllamaService:
     """Service pour gérer la connexion et communication avec Ollama."""
-    
-    def __init__(self, host: str = "localhost", port: int = 11434):
+
+    def __init__(self, base_url: str):
         """
         Initialise le service Ollama.
-        
+
         Args:
-            host: Adresse du serveur Ollama
-            port: Port du serveur Ollama
+            base_url: URL complète du serveur Ollama (ex: http://server.example.com:11434)
+
+        Raises:
+            ValueError: Si base_url n'est pas fourni
         """
-        self.host = host
-        self.port = port
-        self.base_url = f"http://{host}:{port}"
+        if not base_url:
+            raise ValueError("base_url est obligatoire. Chaque Locrit doit avoir son propre serveur Ollama configuré.")
+
+        self.base_url = base_url.rstrip('/')
+
+        # Extract host and port for logging
+        import urllib.parse
+        parsed = urllib.parse.urlparse(self.base_url)
+        self.host = parsed.hostname or 'unknown'
+        self.port = parsed.port or 11434
+
         self.client = AsyncClient(host=self.base_url)
         self.is_connected = False
         self.available_models = []
@@ -292,31 +302,48 @@ class OllamaService:
             }
 
 
-# Instance globale du service Ollama (sera initialisée avec la config)
-ollama_service = None
+def get_ollama_service_for_locrit(locrit_name: str) -> Optional[OllamaService]:
+    """
+    Récupère l'instance du service Ollama pour un Locrit spécifique.
 
-def get_ollama_service():
-    """Récupère ou crée l'instance du service Ollama avec la configuration actuelle"""
-    global ollama_service
+    Args:
+        locrit_name: Nom du Locrit
 
-    if ollama_service is None:
-        # Charger la configuration
-        try:
-            from .config_service import config_service
-            ollama_config = config_service.get_ollama_config()
+    Returns:
+        OllamaService configuré pour ce Locrit ou None si pas de configuration
 
-            # Parser l'URL pour extraire host et port
-            import urllib.parse
-            parsed = urllib.parse.urlparse(ollama_config['base_url'])
-            host = parsed.hostname or 'localhost'
-            port = parsed.port or 11434
+    Raises:
+        ValueError: Si le Locrit n'a pas de base_url configuré
+    """
+    try:
+        from .config_service import config_service
 
-            ollama_service = OllamaService(host=host, port=port)
-        except Exception:
-            # Valeurs par défaut si erreur de config
-            ollama_service = OllamaService()
+        # Récupérer les paramètres du Locrit
+        locrit_settings = config_service.get_locrit_settings(locrit_name)
+        if not locrit_settings:
+            comprehensive_logger.log_error(
+                error=ValueError(f"Locrit '{locrit_name}' non trouvé"),
+                context="get_ollama_service_for_locrit"
+            )
+            return None
 
-    return ollama_service
+        # Chaque Locrit doit avoir son propre ollama_url
+        ollama_url = locrit_settings.get('ollama_url')
+        if not ollama_url:
+            error_msg = f"Locrit '{locrit_name}' n'a pas de 'ollama_url' configuré"
+            comprehensive_logger.log_error(
+                error=ValueError(error_msg),
+                context="get_ollama_service_for_locrit"
+            )
+            raise ValueError(error_msg)
 
-# Créer l'instance par défaut
-ollama_service = get_ollama_service()
+        # Créer le service avec l'URL du Locrit
+        return OllamaService(base_url=ollama_url)
+
+    except Exception as e:
+        comprehensive_logger.log_error(
+            error=e,
+            context="get_ollama_service_for_locrit",
+            additional_data={"locrit_name": locrit_name}
+        )
+        raise

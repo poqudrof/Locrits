@@ -72,43 +72,105 @@ class KuzuMemoryService:
     async def initialize(self) -> bool:
         """
         Initialize the Kuzu database and create schema.
+        If database is corrupted, it will be backed up and recreated.
 
         Returns:
             True if initialization succeeds
         """
-        try:
-            # Create database and connection
-            self.db = kuzu.Database(str(self.db_path))
-            self.conn = kuzu.Connection(self.db)
-            self.graph = KuzuGraph(self.db, allow_dangerous_requests=True)
+        max_retries = 2
+        for attempt in range(max_retries):
+            try:
+                # Create database and connection
+                print(f"🗄️  KUZU DB: Initializing database at {self.db_path} (attempt {attempt + 1}/{max_retries})")
 
-            # Install and load VECTOR extension if embeddings are enabled
-            if self.embeddings_enabled:
-                try:
-                    await asyncio.to_thread(self.conn.execute, "INSTALL VECTOR;")
-                    await asyncio.to_thread(self.conn.execute, "LOAD EXTENSION VECTOR;")
-                    print(f"Vector extension loaded for {self.locrit_name}")
-                except Exception as e:
-                    print(f"Warning: Vector extension installation failed for {self.locrit_name}: {e}")
+                # Check if database directory exists and has lock files (might indicate corruption)
+                if self.db_path.exists():
+                    lock_file = self.db_path.parent / ".lock"
+                    if lock_file.exists():
+                        print(f"⚠️  Found lock file, might indicate crash. Removing...")
+                        try:
+                            lock_file.unlink()
+                        except:
+                            pass
 
-            # Create schema
-            await self._create_schema()
+                # Try to open database in a thread to catch segfaults
+                def create_db():
+                    return kuzu.Database(str(self.db_path))
 
-            # Migrate existing schema if needed
-            await self._migrate_schema()
+                self.db = await asyncio.to_thread(create_db)
+                print(f"🗄️  KUZU DB: Database created/opened at {self.db_path}")
 
-            self.is_initialized = True
-            return True
+                # Use AsyncConnection for proper async support (thread pool managed automatically)
+                self.conn = kuzu.AsyncConnection(self.db, max_concurrent_queries=4)
+                self.graph = KuzuGraph(self.db, allow_dangerous_requests=True)
+                print(f"🗄️  KUZU DB: Async connection established for {self.locrit_name}")
 
-        except Exception as e:
-            print(f"Error initializing Kuzu memory for {self.locrit_name}: {e}")
-            return False
+                # Install and load VECTOR extension if embeddings are enabled
+                if self.embeddings_enabled:
+                    try:
+                        await self.conn.execute("INSTALL VECTOR;")
+                        await self.conn.execute("LOAD EXTENSION VECTOR;")
+                        print(f"Vector extension loaded for {self.locrit_name}")
+                    except Exception as e:
+                        print(f"Warning: Vector extension installation failed for {self.locrit_name}: {e}")
+
+                # Create schema
+                await self._create_schema()
+
+                # Migrate existing schema if needed
+                await self._migrate_schema()
+
+                self.is_initialized = True
+                return True
+
+            except Exception as e:
+                print(f"❌ Error initializing Kuzu memory for {self.locrit_name} (attempt {attempt + 1}): {e}")
+
+                # If this is not the last attempt, try to recover
+                if attempt < max_retries - 1:
+                    # Close any partial connections
+                    try:
+                        if self.conn:
+                            self.conn.close()
+                    except:
+                        pass
+                    try:
+                        if self.db:
+                            del self.db
+                    except:
+                        pass
+
+                    # Backup and remove corrupted database
+                    if self.db_path.exists():
+                        import shutil
+                        from datetime import datetime
+                        backup_path = self.db_path.parent / f"kuzu.db.backup_{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                        try:
+                            print(f"📦 Backing up potentially corrupted database to {backup_path}")
+                            shutil.move(str(self.db_path), str(backup_path))
+                        except Exception as backup_error:
+                            print(f"⚠️  Could not backup database: {backup_error}")
+                            # If backup fails, just remove the corrupted DB
+                            try:
+                                shutil.rmtree(str(self.db_path))
+                            except:
+                                pass
+
+                    print(f"🔄 Retrying with fresh database...")
+                    await asyncio.sleep(0.5)  # Brief pause before retry
+                else:
+                    # Last attempt failed
+                    import traceback
+                    traceback.print_exc()
+                    return False
+
+        return False
 
     async def _create_schema(self) -> None:
         """Create the graph schema for memory storage."""
         try:
             # Create node tables
-            await asyncio.to_thread(self.conn.execute, """
+            await self.conn.execute("""
                 CREATE NODE TABLE IF NOT EXISTS User(
                     id STRING,
                     name STRING,
@@ -118,7 +180,7 @@ class KuzuMemoryService:
                 )
             """)
 
-            await asyncio.to_thread(self.conn.execute, f"""
+            await self.conn.execute(f"""
                 CREATE NODE TABLE IF NOT EXISTS Message(
                     id STRING,
                     role STRING,
@@ -131,7 +193,7 @@ class KuzuMemoryService:
                 )
             """)
 
-            await asyncio.to_thread(self.conn.execute, """
+            await self.conn.execute("""
                 CREATE NODE TABLE IF NOT EXISTS Session(
                     id STRING,
                     name STRING,
@@ -142,7 +204,7 @@ class KuzuMemoryService:
                 )
             """)
 
-            await asyncio.to_thread(self.conn.execute, f"""
+            await self.conn.execute(f"""
                 CREATE NODE TABLE IF NOT EXISTS Concept(
                     id STRING,
                     name STRING,
@@ -154,7 +216,7 @@ class KuzuMemoryService:
                 )
             """)
 
-            await asyncio.to_thread(self.conn.execute, """
+            await self.conn.execute("""
                 CREATE NODE TABLE IF NOT EXISTS Topic(
                     id STRING,
                     name STRING,
@@ -164,7 +226,7 @@ class KuzuMemoryService:
                 )
             """)
 
-            await asyncio.to_thread(self.conn.execute, f"""
+            await self.conn.execute(f"""
                 CREATE NODE TABLE IF NOT EXISTS Memory(
                     id STRING,
                     content STRING,
@@ -177,49 +239,49 @@ class KuzuMemoryService:
             """)
 
             # Create relationship tables
-            await asyncio.to_thread(self.conn.execute, """
+            await self.conn.execute("""
                 CREATE REL TABLE IF NOT EXISTS SENT(
                     FROM User TO Message,
                     weight DOUBLE DEFAULT 1.0
                 )
             """)
 
-            await asyncio.to_thread(self.conn.execute, """
+            await self.conn.execute("""
                 CREATE REL TABLE IF NOT EXISTS RESPONDS_TO(
                     FROM Message TO Message,
                     delay_seconds INT64
                 )
             """)
 
-            await asyncio.to_thread(self.conn.execute, """
+            await self.conn.execute("""
                 CREATE REL TABLE IF NOT EXISTS PART_OF(
                     FROM Message TO Session,
                     position INT64
                 )
             """)
 
-            await asyncio.to_thread(self.conn.execute, """
+            await self.conn.execute("""
                 CREATE REL TABLE IF NOT EXISTS MENTIONS(
                     FROM Message TO Concept,
                     confidence DOUBLE
                 )
             """)
 
-            await asyncio.to_thread(self.conn.execute, """
+            await self.conn.execute("""
                 CREATE REL TABLE IF NOT EXISTS DISCUSSES(
                     FROM Session TO Topic,
                     relevance DOUBLE
                 )
             """)
 
-            await asyncio.to_thread(self.conn.execute, """
+            await self.conn.execute("""
                 CREATE REL TABLE IF NOT EXISTS LEARNS(
                     FROM Session TO Memory,
                     strength DOUBLE
                 )
             """)
 
-            await asyncio.to_thread(self.conn.execute, """
+            await self.conn.execute("""
                 CREATE REL TABLE IF NOT EXISTS RELATES_TO(
                     FROM Concept TO Concept,
                     relationship_type STRING,
@@ -239,7 +301,7 @@ class KuzuMemoryService:
         """Create vector indices for similarity search."""
         try:
             # Create vector index for message content embeddings
-            await asyncio.to_thread(self.conn.execute, f"""
+            await self.conn.execute(f"""
                 CALL CREATE_VECTOR_INDEX(
                     'Message',
                     '{self.message_vector_index}',
@@ -248,7 +310,7 @@ class KuzuMemoryService:
             """)
 
             # Create vector index for memory content embeddings
-            await asyncio.to_thread(self.conn.execute, f"""
+            await self.conn.execute(f"""
                 CALL CREATE_VECTOR_INDEX(
                     'Memory',
                     '{self.memory_vector_index}',
@@ -257,7 +319,7 @@ class KuzuMemoryService:
             """)
 
             # Create vector index for concept name embeddings
-            await asyncio.to_thread(self.conn.execute, f"""
+            await self.conn.execute(f"""
                 CALL CREATE_VECTOR_INDEX(
                     'Concept',
                     '{self.concept_vector_index}',
@@ -272,7 +334,7 @@ class KuzuMemoryService:
         """Migrate existing schema to add missing embedding columns."""
         try:
             # Check if Message table has content_embedding column
-            result = await asyncio.to_thread(self.conn.execute, """
+            result = await self.conn.execute("""
                 CALL TABLE_INFO('Message') RETURN *
             """)
 
@@ -285,7 +347,7 @@ class KuzuMemoryService:
             # Add content_embedding column if it doesn't exist
             if 'content_embedding' not in columns:
                 print(f"Migrating Message table schema for {self.locrit_name}...")
-                await asyncio.to_thread(self.conn.execute, f"""
+                await self.conn.execute(f"""
                     ALTER TABLE Message ADD content_embedding FLOAT[{self.embedding_dimension}]
                 """)
                 print(f"Added content_embedding column to Message table for {self.locrit_name}")
@@ -872,7 +934,7 @@ class KuzuMemoryService:
 
             # Insert message with embedding
             if content_embedding:
-                await asyncio.to_thread(self.conn.execute, """
+                await self.conn.execute("""
                     CREATE (m:Message {
                         id: $message_id,
                         role: $role,
@@ -893,7 +955,7 @@ class KuzuMemoryService:
                 })
             else:
                 # Fallback to message without embedding if generation fails
-                await asyncio.to_thread(self.conn.execute, """
+                await self.conn.execute("""
                     CREATE (m:Message {
                         id: $message_id,
                         role: $role,
@@ -912,12 +974,12 @@ class KuzuMemoryService:
                 })
 
             # Create relationships
-            await asyncio.to_thread(self.conn.execute, """
+            await self.conn.execute("""
                 MATCH (u:User {id: $user_id}), (m:Message {id: $message_id})
                 CREATE (u)-[:SENT {weight: 1.0}]->(m)
             """, {"user_id": user_id, "message_id": message_id})
 
-            await asyncio.to_thread(self.conn.execute, """
+            await self.conn.execute("""
                 MATCH (m:Message {id: $message_id}), (s:Session {id: $session_id})
                 CREATE (m)-[:PART_OF {position: 0}]->(s)
             """, {"message_id": message_id, "session_id": session_id})
@@ -928,6 +990,13 @@ class KuzuMemoryService:
             # Link to previous message in session if exists
             await self._link_to_previous_message(message_id, session_id)
 
+            # Periodic cleanup check (every 100th message)
+            if int(message_id.split('_')[-1][:4]) % 100 == 0:
+                try:
+                    await self.cleanup_old_messages(max_messages=5000)
+                except:
+                    pass
+
             return message_id
 
         except Exception as e:
@@ -937,7 +1006,7 @@ class KuzuMemoryService:
     async def _ensure_user_exists(self, user_id: str) -> None:
         """Ensure user node exists."""
         try:
-            await asyncio.to_thread(self.conn.execute, """
+            await self.conn.execute("""
                 MERGE (u:User {id: $user_id})
                 ON CREATE SET u.name = $user_id, u.created_at = $timestamp
             """, {"user_id": user_id, "timestamp": datetime.now()})
@@ -947,7 +1016,7 @@ class KuzuMemoryService:
     async def _ensure_session_exists(self, session_id: str, user_id: str) -> None:
         """Ensure session node exists."""
         try:
-            await asyncio.to_thread(self.conn.execute, """
+            await self.conn.execute("""
                 MERGE (s:Session {id: $session_id})
                 ON CREATE SET s.created_at = $timestamp, s.user_id = $user_id
             """, {"session_id": session_id, "user_id": user_id, "timestamp": datetime.now()})
@@ -968,7 +1037,7 @@ class KuzuMemoryService:
         """Link message to previous message in the same session."""
         try:
             # Find the most recent previous message in the session
-            result = await asyncio.to_thread(self.conn.execute, """
+            result = await self.conn.execute("""
                 MATCH (m:Message)-[:PART_OF]->(s:Session {id: $session_id})
                 WHERE m.id <> $message_id
                 RETURN m.id as prev_id, m.timestamp as prev_time
@@ -982,7 +1051,7 @@ class KuzuMemoryService:
                     prev_id = row[0]
 
                     # Create RESPONDS_TO relationship
-                    await asyncio.to_thread(self.conn.execute, """
+                    await self.conn.execute("""
                         MATCH (prev:Message {id: $prev_id}), (curr:Message {id: $message_id})
                         CREATE (curr)-[:RESPONDS_TO {delay_seconds: 0}]->(prev)
                     """, {"prev_id": prev_id, "message_id": message_id})
@@ -1244,7 +1313,7 @@ class KuzuMemoryService:
             return []
 
         try:
-            result = await asyncio.to_thread(self.conn.execute, """
+            result = await self.conn.execute("""
                 MATCH (c:Concept {name: $concept_name})-[:RELATES_TO*1..$depth]-(related:Concept)
                 RETURN DISTINCT related.name as name, related.type as type,
                        related.description as description
@@ -1383,7 +1452,7 @@ class KuzuMemoryService:
 
         try:
             # Delete the message and all its relationships
-            await asyncio.to_thread(self.conn.execute, """
+            await self.conn.execute("""
                 MATCH (m:Message {id: $message_id})
                 DETACH DELETE m
             """, {"message_id": message_id})
@@ -1410,7 +1479,7 @@ class KuzuMemoryService:
 
         try:
             # Update message content
-            await asyncio.to_thread(self.conn.execute, """
+            await self.conn.execute("""
                 MATCH (m:Message {id: $message_id})
                 SET m.content = $new_content
             """, {"message_id": message_id, "new_content": new_content})
@@ -1448,7 +1517,7 @@ class KuzuMemoryService:
 
             # Insert memory with embedding
             if content_embedding:
-                await asyncio.to_thread(self.conn.execute, """
+                await self.conn.execute("""
                     CREATE (m:Memory {
                         id: $memory_id,
                         content: $content,
@@ -1466,7 +1535,7 @@ class KuzuMemoryService:
                 })
             else:
                 # Fallback to memory without embedding if generation fails
-                await asyncio.to_thread(self.conn.execute, """
+                await self.conn.execute("""
                     CREATE (m:Memory {
                         id: $memory_id,
                         content: $content,
@@ -1501,7 +1570,7 @@ class KuzuMemoryService:
             return False
 
         try:
-            await asyncio.to_thread(self.conn.execute, """
+            await self.conn.execute("""
                 MATCH (m:Memory {id: $memory_id})
                 DETACH DELETE m
             """, {"memory_id": memory_id})
@@ -1554,7 +1623,7 @@ class KuzuMemoryService:
                 SET {', '.join(updates)}
             """
 
-            await asyncio.to_thread(self.conn.execute, query, params)
+            await self.conn.execute(query, params)
 
             return True
 
@@ -1576,7 +1645,7 @@ class KuzuMemoryService:
             return False
 
         try:
-            await asyncio.to_thread(self.conn.execute, """
+            await self.conn.execute("""
                 MATCH (c:Concept {id: $concept_id})
                 DETACH DELETE c
             """, {"concept_id": concept_id})
@@ -1602,13 +1671,13 @@ class KuzuMemoryService:
 
         try:
             # Delete all messages in the session first
-            await asyncio.to_thread(self.conn.execute, """
+            await self.conn.execute("""
                 MATCH (m:Message)-[:PART_OF]->(s:Session {id: $session_id})
                 DETACH DELETE m
             """, {"session_id": session_id})
 
             # Delete the session
-            await asyncio.to_thread(self.conn.execute, """
+            await self.conn.execute("""
                 MATCH (s:Session {id: $session_id})
                 DETACH DELETE s
             """, {"session_id": session_id})
@@ -1631,7 +1700,7 @@ class KuzuMemoryService:
 
         try:
             # Delete all nodes and relationships
-            await asyncio.to_thread(self.conn.execute, "MATCH (n) DETACH DELETE n")
+            await self.conn.execute("MATCH (n) DETACH DELETE n")
 
             # Recreate schema
             await self._create_schema()
@@ -1756,13 +1825,79 @@ class KuzuMemoryService:
             print(f"Error getting all memories: {e}")
             return []
 
+    async def get_message_count(self) -> int:
+        """Get total message count."""
+        if not self.is_initialized:
+            return 0
+
+        try:
+            def count_messages():
+                result = self.conn.execute("MATCH (m:Message) RETURN COUNT(m)")
+                if result.has_next():
+                    row = result.get_next()
+                    return row[0] if row else 0
+                return 0
+
+            return await asyncio.to_thread(count_messages)
+        except Exception as e:
+            print(f"Error counting messages: {e}")
+            return 0
+
+    async def cleanup_old_messages(self, max_messages: int = 5000) -> int:
+        """
+        Delete oldest messages if count exceeds max_messages.
+
+        Args:
+            max_messages: Maximum messages to keep
+
+        Returns:
+            Number of messages deleted
+        """
+        if not self.is_initialized:
+            return 0
+
+        try:
+            count = await self.get_message_count()
+
+            if count <= max_messages:
+                return 0
+
+            delete_count = count - max_messages
+
+            def delete_old():
+                self.conn.execute(f"""
+                    MATCH (m:Message)
+                    WITH m ORDER BY m.timestamp ASC
+                    LIMIT {delete_count}
+                    DETACH DELETE m
+                """)
+                return delete_count
+
+            deleted = await asyncio.to_thread(delete_old)
+            print(f"Cleaned up {deleted} old messages for {self.locrit_name}")
+            return deleted
+
+        except Exception as e:
+            print(f"Error cleaning up old messages: {e}")
+            return 0
+
     async def close(self) -> None:
-        """Close the database connection."""
+        """Close the database connection and cleanup resources."""
         try:
             if self.conn:
+                # Perform cleanup before closing
+                try:
+                    await self.cleanup_old_messages(max_messages=5000)
+                except:
+                    pass
+
                 self.conn.close()
+                self.conn = None
+
             if self.db:
                 del self.db
+                self.db = None
+
             self.is_initialized = False
         except Exception as e:
             print(f"Error closing Kuzu connection for {self.locrit_name}: {e}")

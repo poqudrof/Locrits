@@ -208,26 +208,13 @@ class ComprehensiveLoggingService:
         return entry
 
     def _log_entry(self, entry: LogEntry):
-        """Log an entry to appropriate loggers"""
+        """Log an entry to appropriate loggers (GLOBAL ONLY to reduce disk usage)"""
         json_line = entry.to_json()
 
-        # If locrit_name is provided, log to per-Locrite loggers
-        if entry.locrit_name:
-            locrit_loggers = self._get_locrit_loggers(entry.locrit_name)
+        # DISABLED per-Locrit logging to fix 1GB/sec disk leak
+        # All logs go to global loggers only
 
-            # Log to Locrit-specific loggers
-            locrit_loggers['main'].info(json_line)
-
-            if entry.category in [LogCategory.USER_MESSAGE.value, LogCategory.ASSISTANT_MESSAGE.value]:
-                locrit_loggers['messages'].info(json_line)
-            elif entry.category in [LogCategory.OLLAMA_REQUEST.value, LogCategory.OLLAMA_RESPONSE.value]:
-                locrit_loggers['ollama'].info(json_line)
-            elif entry.category.startswith('memory_'):
-                locrit_loggers['memory'].info(json_line)
-            elif entry.level in ['error', 'critical']:
-                locrit_loggers['errors'].error(json_line)
-
-        # Always log to global loggers as well (for system-wide monitoring)
+        # Always log to global main logger
         self.main_logger.info(json_line)
 
         # Log to specialized global loggers based on category

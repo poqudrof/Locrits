@@ -99,9 +99,46 @@ def api_get_locrit_info(locrit_name):
 
 
 @api_v1_bp.route('/api/v1/locrits/<locrit_name>/chat', methods=['POST'])
-def api_v1_chat_with_locrit(locrit_name):
-    """API publique pour chat avec un Locrit (pour communication inter-Locrits)"""
+async def api_v1_chat_with_locrit(locrit_name):
+    """
+    API publique pour chat avec un Locrit (pour communication inter-Locrits et API externe).
+    Supporte deux modes:
+    1. Avec conversation_id: utilise le service de conversation (contexte géré côté serveur)
+    2. Sans conversation_id: mode legacy (pour compatibilité descendante)
+    """
     try:
+        # Récupérer le message et les métadonnées
+        data = request.get_json(force=True)
+        if not data or 'message' not in data:
+            return jsonify({'error': 'Message requis'}), 400
+
+        message = data['message'].strip()
+        if not message:
+            return jsonify({'error': 'Message vide'}), 400
+
+        conversation_id = data.get('conversation_id')
+
+        # Si conversation_id est fourni, utiliser le service de conversation
+        if conversation_id:
+            from src.services.conversation_service import conversation_service
+
+            result = await conversation_service.send_message(
+                conversation_id=conversation_id,
+                message=message,
+                save_to_memory=True
+            )
+
+            if not result.get('success'):
+                error_msg = result.get('error', 'Unknown error')
+                status_code = 404 if 'not found' in error_msg.lower() else 500
+                return jsonify(result), status_code
+
+            # Log de la communication inter-Locrits
+            logger.info(f"API v1 conversation: {conversation_id} -> {locrit_name}")
+
+            return jsonify(result)
+
+        # Mode legacy - sans conversation_id (pour compatibilité descendante)
         # Vérifier que le Locrit existe et est actif
         settings = config_service.get_locrit_settings(locrit_name)
         if not settings:
@@ -116,23 +153,19 @@ def api_v1_chat_with_locrit(locrit_name):
             logger.warning(f"Accès non autorisé pour {locrit_name} (ouvert aux humains: {open_to_humans})")
             return jsonify({'error': 'Locrit non accessible depuis le web'}), 403
 
-        # Récupérer le message et les métadonnées
-        data = request.get_json()
-        if not data or 'message' not in data:
-            return jsonify({'error': 'Message requis'}), 400
-
-        message = data['message'].strip()
-        if not message:
-            return jsonify({'error': 'Message vide'}), 400
-
         # Métadonnées optionnelles pour le contexte
         sender_name = data.get('sender_name', 'Locrit externe')
         sender_type = data.get('sender_type', 'locrit')
         context = data.get('context', '')
 
         # Utiliser le service Ollama pour générer la réponse
-        from src.services.ollama_service import get_ollama_service
-        ollama_service = get_ollama_service()
+        from src.services.ollama_service import get_ollama_service_for_locrit
+
+        try:
+            ollama_service = get_ollama_service_for_locrit(locrit_name)
+        except (ValueError, Exception) as e:
+            logger.error(f"Failed to get Ollama service for {locrit_name}: {e}")
+            return jsonify({'error': f'Service Ollama non disponible: {str(e)}'}), 503
 
         # Configurer le modèle du Locrit
         model = settings.get('ollama_model')
@@ -142,7 +175,7 @@ def api_v1_chat_with_locrit(locrit_name):
         # Test de connexion
         connection_test = ollama_service.test_connection()
         if not connection_test.get('success'):
-            return jsonify({'error': 'Service Ollama non disponible'}), 500
+            return jsonify({'error': 'Service Ollama non disponible - connexion échouée'}), 503
 
         # Préparer le prompt système enrichi avec le contexte
         system_prompt = f"Tu es {locrit_name}, un Locrit. {settings.get('description', '')}"
@@ -156,6 +189,10 @@ def api_v1_chat_with_locrit(locrit_name):
             ollama_service.is_connected = True
             ollama_service.available_models = connection_test.get('models', [])
 
+            # Utiliser nest_asyncio pour permettre asyncio.run dans Flask
+            import nest_asyncio
+            nest_asyncio.apply()
+
             response = asyncio.run(ollama_service.chat(message, system_prompt))
 
             # Log de la communication inter-Locrits
@@ -167,7 +204,8 @@ def api_v1_chat_with_locrit(locrit_name):
                 'locrit_name': locrit_name,
                 'model': model,
                 'timestamp': datetime.now().isoformat(),
-                'sender_acknowledged': sender_name
+                'sender_acknowledged': sender_name,
+                'mode': 'legacy'
             })
 
         except Exception as e:

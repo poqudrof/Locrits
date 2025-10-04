@@ -3,6 +3,7 @@ Memory Manager Service - Manages per-Locrit Kuzu memory instances.
 This service handles the creation and routing of memory requests to individual Locrit databases.
 """
 
+import asyncio
 from typing import Dict, Optional, Any, List
 from .kuzu_memory_service import KuzuMemoryService
 from .config_service import config_service
@@ -22,6 +23,8 @@ class MemoryManagerService:
         self.base_path = base_path
         self.memory_services: Dict[str, KuzuMemoryService] = {}
         self.is_initialized = False
+        self._initialization_locks: Dict[str, asyncio.Lock] = {}
+        self._global_lock = asyncio.Lock()
 
     async def initialize(self) -> bool:
         """
@@ -40,6 +43,7 @@ class MemoryManagerService:
     async def get_memory_service(self, locrit_name: str) -> Optional[KuzuMemoryService]:
         """
         Get or create a memory service for a specific Locrit.
+        Thread-safe: prevents multiple threads from initializing the same database.
 
         Args:
             locrit_name: Name of the Locrit
@@ -50,34 +54,48 @@ class MemoryManagerService:
         if not self.is_initialized:
             await self.initialize()
 
-        # Return existing service if already created
+        # Return existing service if already created (fast path, no lock needed)
         if locrit_name in self.memory_services:
             return self.memory_services[locrit_name]
 
-        # Verify the Locrit exists in config
-        locrit_settings = config_service.get_locrit_settings(locrit_name)
-        if not locrit_settings:
-            print(f"Locrit {locrit_name} not found in configuration")
-            return None
+        # Get or create a lock for this specific Locrit
+        async with self._global_lock:
+            if locrit_name not in self._initialization_locks:
+                self._initialization_locks[locrit_name] = asyncio.Lock()
+            locrit_lock = self._initialization_locks[locrit_name]
 
-        try:
-            # Create new memory service for this Locrit
-            memory_service = KuzuMemoryService(locrit_name, self.base_path)
+        # Use per-Locrit lock to prevent concurrent initialization
+        async with locrit_lock:
+            # Check again after acquiring lock (another thread might have created it)
+            if locrit_name in self.memory_services:
+                return self.memory_services[locrit_name]
 
-            # Initialize the service
-            success = await memory_service.initialize()
-            if not success:
-                print(f"Failed to initialize memory service for {locrit_name}")
+            # Verify the Locrit exists in config
+            locrit_settings = config_service.get_locrit_settings(locrit_name)
+            if not locrit_settings:
+                print(f"Locrit {locrit_name} not found in configuration")
                 return None
 
-            # Store and return the service
-            self.memory_services[locrit_name] = memory_service
-            print(f"Created memory service for Locrit: {locrit_name}")
-            return memory_service
+            try:
+                # Create new memory service for this Locrit
+                memory_service = KuzuMemoryService(locrit_name, self.base_path)
 
-        except Exception as e:
-            print(f"Error creating memory service for {locrit_name}: {e}")
-            return None
+                # Initialize the service (this is where the segfault occurs without locking)
+                success = await memory_service.initialize()
+                if not success:
+                    print(f"Failed to initialize memory service for {locrit_name}")
+                    return None
+
+                # Store and return the service
+                self.memory_services[locrit_name] = memory_service
+                print(f"✅ Created memory service for Locrit: {locrit_name}")
+                return memory_service
+
+            except Exception as e:
+                print(f"❌ Error creating memory service for {locrit_name}: {e}")
+                import traceback
+                traceback.print_exc()
+                return None
 
     async def save_message(self, locrit_name: str, role: str, content: str,
                           session_id: str = None, user_id: str = "default",
@@ -101,9 +119,7 @@ class MemoryManagerService:
             return None
 
         try:
-            # Start operation tracking
-            operation_id = comprehensive_logger.start_operation(f"memory_save_{locrit_name}")
-
+            # REDUCED LOGGING: Only track errors, not every message save
             result = await memory_service.save_message(
                 role=role,
                 content=content,
@@ -112,31 +128,13 @@ class MemoryManagerService:
                 metadata=metadata
             )
 
-            # End operation tracking
-            duration_ms = comprehensive_logger.end_operation(operation_id)
-
-            # Log the memory save operation
-            comprehensive_logger.log_memory_save(
-                content=content,
-                locrit_name=locrit_name,
-                memory_type="message",
-                session_id=session_id,
-                user_id=user_id,
-                metadata=metadata,
-                success=result is not None,
-                error=None if result else "Save returned None"
-            )
-
             return result
         except Exception as e:
-            # End operation tracking for failed operation
-            duration_ms = comprehensive_logger.end_operation(operation_id)
-
             print(f"Error saving message for {locrit_name}: {e}")
 
-            # Log the failed memory save operation
+            # Log only failed operations to reduce disk usage
             comprehensive_logger.log_memory_save(
-                content=content,
+                content=content[:100] + "...",  # Truncate content in logs
                 locrit_name=locrit_name,
                 memory_type="message",
                 session_id=session_id,
@@ -166,41 +164,18 @@ class MemoryManagerService:
             return []
 
         try:
-            # Start operation tracking
-            operation_id = comprehensive_logger.start_operation(f"memory_recall_{locrit_name}")
-
+            # REDUCED LOGGING: No logging for successful recalls
             result = await memory_service.get_conversation_history(session_id, limit)
-
-            # End operation tracking
-            duration_ms = comprehensive_logger.end_operation(operation_id)
-
-            # Log the memory recall operation
-            comprehensive_logger.log_memory_recall(
-                query=f"session:{session_id}",
-                locrit_name=locrit_name,
-                results_count=len(result),
-                session_id=session_id,
-                duration_ms=duration_ms,
-                search_type="conversation_history"
-            )
-
             return result
         except Exception as e:
-            # End operation tracking for failed operation
-            duration_ms = comprehensive_logger.end_operation(operation_id)
-
             print(f"Error getting conversation history for {locrit_name}: {e}")
-
-            # Log the failed memory recall operation
-            comprehensive_logger.log_memory_recall(
-                query=f"session:{session_id}",
+            # Only log errors
+            comprehensive_logger.log_error(
+                error=e,
+                context=f"get_conversation_history for {locrit_name}",
                 locrit_name=locrit_name,
-                results_count=0,
-                session_id=session_id,
-                duration_ms=duration_ms,
-                search_type="conversation_history"
+                session_id=session_id
             )
-
             return []
 
     async def search_memories(self, locrit_name: str, query: str,
@@ -367,7 +342,7 @@ class MemoryManagerService:
         return stats
 
     async def close_all(self) -> None:
-        """Close all memory services."""
+        """Close all memory services and cleanup resources."""
         for locrit_name, memory_service in self.memory_services.items():
             try:
                 await memory_service.close()
@@ -376,6 +351,7 @@ class MemoryManagerService:
                 print(f"Error closing memory service for {locrit_name}: {e}")
 
         self.memory_services.clear()
+        self._initialization_locks.clear()
         self.is_initialized = False
 
     async def close_locrit_memory(self, locrit_name: str) -> bool:
@@ -392,6 +368,11 @@ class MemoryManagerService:
             try:
                 await self.memory_services[locrit_name].close()
                 del self.memory_services[locrit_name]
+
+                # Cleanup lock as well
+                if locrit_name in self._initialization_locks:
+                    del self._initialization_locks[locrit_name]
+
                 print(f"Closed memory service for {locrit_name}")
                 return True
             except Exception as e:

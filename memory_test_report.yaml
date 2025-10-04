@@ -1,0 +1,26 @@
+samples:
+- client_delta_mb: 0.0
+  client_memory_mb: 32.87
+  label: Initial state
+  server_delta_mb: 0.0
+  server_memory_mb: 6.15
+  timestamp: '2025-10-04T19:07:59.621725'
+- client_delta_mb: 0.04
+  client_memory_mb: 32.91
+  label: After creating conversation
+  server_delta_mb: 0.0
+  server_memory_mb: 6.15
+  timestamp: '2025-10-04T19:07:59.628700'
+- client_delta_mb: 0.12
+  client_memory_mb: 32.99
+  label: Before multiple messages
+  server_delta_mb: 0.0
+  server_memory_mb: 6.15
+  timestamp: '2025-10-04T19:09:19.708670'
+- client_delta_mb: 0.21
+  client_memory_mb: 33.08
+  label: Final state
+  server_delta_mb: 0.0
+  server_memory_mb: 6.15
+  timestamp: '2025-10-04T19:10:39.785618'
+test_run: '2025-10-04T19:10:39.785764'

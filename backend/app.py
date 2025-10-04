@@ -15,7 +15,9 @@ from backend.routes.chat import chat_bp
 from backend.routes.config import config_bp
 from backend.routes.memory import memory_bp
 from backend.routes.api.v1 import api_v1_bp
+from backend.routes.public import public_bp
 from backend.routes.errors import errors_bp
+from backend.routes.conversation import conversation_bp
 from backend.routes.websocket import chat_namespace
 from src.services.ui_logging_service import ui_logging_service
 from src.services.comprehensive_logging_service import comprehensive_logger
@@ -64,6 +66,8 @@ def create_app(config_name='default'):
     app.register_blueprint(config_bp)
     app.register_blueprint(memory_bp)
     app.register_blueprint(api_v1_bp)
+    app.register_blueprint(public_bp)
+    app.register_blueprint(conversation_bp)
     app.register_blueprint(errors_bp)
 
     # Register WebSocket namespace

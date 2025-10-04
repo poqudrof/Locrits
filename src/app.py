@@ -11,7 +11,7 @@ from textual.widgets import Header, Footer
 from .services.locrit_manager import LocritManager
 from .services.auth_service import AuthService
 from .services.config_service import config_service
-from .services.firestore_admin_service import firestore_admin_service
+from .services.unified_firebase_service import unified_firebase_service
 from .services.session_service import session_service
 from .services.comprehensive_logging_service import comprehensive_logger, LogLevel, LogCategory
 from .ui.auth_screen import AuthScreen
@@ -152,11 +152,23 @@ class LocritApp(App):
             self.notify("🔄 Synchronisation avec le serveur...")
             print("🔍 Debug: Avant sync_all_locrits")
             try:
-                sync_result = await firestore_admin_service.sync_all_locrits()
-                print(f"🔍 Debug sync_result: {sync_result}")
-                
-                if sync_result and isinstance(sync_result, dict) and sync_result.get("status") == "success":
-                    self.notify("✅ Session restaurée et synchronisée")
+                # Set auth info for unified Firebase service
+                unified_firebase_service.set_auth_info(session_data)
+
+                # Push all Locrits to platform
+                locrits = config_service.list_locrits()
+                sync_results = []
+                for locrit_name in locrits:
+                    locrit_data = config_service.get_locrit_settings(locrit_name)
+                    if locrit_data:
+                        result = await unified_firebase_service.push_locrit_to_platform(locrit_name, locrit_data)
+                        sync_results.append(result)
+
+                successful_syncs = sum(1 for r in sync_results if r.get('success'))
+                print(f"🔍 Debug sync_results: {successful_syncs}/{len(sync_results)} successful")
+
+                if successful_syncs > 0:
+                    self.notify(f"✅ Session restaurée - {successful_syncs} Locrit(s) synchronisé(s)")
                 else:
                     self.notify("✅ Session restaurée (sync en arrière-plan)")
             except Exception as sync_error:

@@ -5,9 +5,11 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import { syncService, LocritSyncStatus } from '@/lib/syncService'
+import { firebaseService, FirebaseLocrit } from '@/lib/firebaseService'
 
 export default function MyLocrits() {
   const [locrits, setLocrits] = useState<any[]>([])
+  const [publishedLocrits, setPublishedLocrits] = useState<FirebaseLocrit[]>([])
   const [locritSyncStatuses, setLocritSyncStatuses] = useState<Record<string, LocritSyncStatus>>({})
   const [syncingLocrits, setSyncingLocrits] = useState<Set<string>>(new Set())
   const [showDetails, setShowDetails] = useState<string | null>(null)
@@ -33,6 +35,16 @@ export default function MyLocrits() {
   const loadSyncStatuses = () => {
     const statuses = syncService.getLocritSyncStatuses()
     setLocritSyncStatuses(statuses)
+  }
+
+  // Load published Locrits from Firebase
+  const loadPublishedLocrits = async () => {
+    try {
+      const published = await firebaseService.getPublishedLocrits()
+      setPublishedLocrits(published)
+    } catch (error) {
+      console.error('Error loading published Locrits:', error)
+    }
   }
 
   // Sync a specific locrit to the cloud
@@ -83,6 +95,7 @@ export default function MyLocrits() {
   useEffect(() => {
     loadLocrits()
     loadSyncStatuses()
+    loadPublishedLocrits()
   }, [])
 
   const toggleLocritStatus = async (locritName: string) => {
@@ -394,6 +407,74 @@ export default function MyLocrits() {
           </CardContent>
         </Card>
       )}
+
+      {/* Published Locrits Section */}
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold tracking-tight">Locrits Publiés</h2>
+            <p className="text-muted-foreground">
+              Découvrez les Locrits publiés sur la plateforme par d'autres utilisateurs
+            </p>
+          </div>
+        </div>
+
+        {publishedLocrits.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {publishedLocrits.map((locrit) => (
+              <Card key={locrit.id} className="hover:shadow-lg transition-shadow">
+                <CardHeader>
+                  <div className="flex items-center space-x-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+                      <span className="text-xl">🤖</span>
+                    </div>
+                    <div className="flex-1">
+                      <CardTitle className="text-lg">{locrit.name}</CardTitle>
+                      <CardDescription className="text-sm">{locrit.description}</CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Adresse publique:</span>
+                      <code className="text-xs bg-muted px-2 py-1 rounded">
+                        {locrit.publicAddress}
+                      </code>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Statut:</span>
+                      <Badge variant={locrit.isOnline ? 'default' : 'secondary'}>
+                        {locrit.isOnline ? '🟢 En ligne' : '🔴 Hors ligne'}
+                      </Badge>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-muted-foreground">Créé:</span>
+                      <span>{locrit.createdAt?.toLocaleDateString()}</span>
+                    </div>
+                    <div className="pt-2">
+                      <Button className="w-full" size="sm">
+                        🌐 Visiter le Locrit
+                      </Button>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        ) : (
+          <Card>
+            <CardContent className="text-center py-12">
+              <span className="text-4xl mb-4 block">🌐</span>
+              <h3 className="text-lg font-medium mb-2">Aucun Locrit publié</h3>
+              <p className="text-muted-foreground">
+                Aucun Locrit n'a encore été publié sur la plateforme publique.
+                Publiez votre premier Locrit pour qu'il apparaisse ici !
+              </p>
+            </CardContent>
+          </Card>
+        )}
+      </div>
     </div>
   )
 }

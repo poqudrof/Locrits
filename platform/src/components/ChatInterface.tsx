@@ -14,6 +14,7 @@ interface ChatInterfaceProps {
 }
 
 export function ChatInterface({ locrit, messages, onSendMessage, onBack }: ChatInterfaceProps) {
+  console.log('ChatInterface render - messages count:', messages.length);
   const [newMessage, setNewMessage] = useState("");
 
   const handleSend = () => {
@@ -31,12 +32,12 @@ export function ChatInterface({ locrit, messages, onSendMessage, onBack }: ChatI
   };
 
   return (
-    <Card className="h-[600px] flex flex-col locrit-card shadow-2xl">
-      <CardHeader className="bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-t-xl">
+    <Card className="h-[600px] flex flex-col locrit-card shadow-2xl overflow-hidden">
+      <CardHeader className="bg-gradient-to-r from-purple-500 to-pink-500 text-white rounded-t-xl flex-shrink-0">
         <div className="flex items-center gap-3">
-          <Button 
-            variant="ghost" 
-            size="sm" 
+          <Button
+            variant="ghost"
+            size="sm"
             onClick={onBack}
             className="text-white hover:bg-white/20"
           >
@@ -53,8 +54,8 @@ export function ChatInterface({ locrit, messages, onSendMessage, onBack }: ChatI
           </div>
         </div>
       </CardHeader>
-      <CardContent className="flex-1 p-0 bg-gradient-to-b from-purple-50 to-pink-50">
-        <ScrollArea className="h-full p-4">
+      <CardContent className="flex-1 p-0 bg-gradient-to-b from-purple-50 to-pink-50 min-h-0">
+        <ScrollArea className="h-full p-4 overflow-auto">
           <div className="space-y-4">
             {messages.map((message) => (
               <div
@@ -82,17 +83,20 @@ export function ChatInterface({ locrit, messages, onSendMessage, onBack }: ChatI
           </div>
         </ScrollArea>
       </CardContent>
-      <CardFooter className="bg-white border-t-2 border-purple-200 rounded-b-xl">
+      <CardFooter className="bg-white border-t-2 border-purple-200 rounded-b-xl flex-shrink-0 relative z-10">
         <div className="flex w-full gap-3">
           <Input
+            id="chat-message-input"
+            name="message"
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyPress={handleKeyPress}
             placeholder="Écris ton message magique... ✨"
-            className="flex-1 border-2 border-purple-200 rounded-xl bg-purple-50 focus:border-purple-400 focus:bg-white"
+            className="flex-1 border-2 border-purple-200 rounded-xl bg-purple-50 focus:border-purple-400 focus:bg-white pointer-events-auto"
+            autoComplete="off"
           />
-          <Button 
-            onClick={handleSend} 
+          <Button
+            onClick={handleSend}
             disabled={!newMessage.trim()}
             className="bg-gradient-to-r from-purple-500 to-pink-500 hover:from-purple-600 hover:to-pink-600 text-white rounded-xl px-6 shadow-lg disabled:from-gray-400 disabled:to-gray-500"
           >

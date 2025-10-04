@@ -60,9 +60,7 @@ class ConfigService:
         """Crée un fichier de configuration par défaut"""
         default_config = {
             'ollama': {
-                'host': 'localhost',
-                'port': 11434,
-                'base_url': 'http://localhost:11434',
+                'base_url': '',  # Must be configured per Locrit, not globally
                 'default_model': 'llama3.2',
                 'timeout': 30
             },
@@ -145,27 +143,19 @@ class ConfigService:
             return False
     
     def get_ollama_config(self) -> Dict[str, Any]:
-        """Retourne la configuration complète d'Ollama depuis .env et config.yaml"""
-        # Priorité au fichier de config pour l'interface web, fallback vers variables d'environnement
+        """
+        Retourne la configuration complète d'Ollama depuis config.yaml.
+        NOTE: Cette méthode est deprecated. Utilisez get_locrit_settings() pour obtenir
+        l'ollama_url spécifique à chaque Locrit.
+        """
+        logger.warning("⚠️ get_ollama_config() est deprecated. Utilisez get_locrit_settings() pour chaque Locrit.")
+
         config = {
-            'host': 'localhost',
-            'port': 11434,
-            'base_url': self.get('ollama.base_url') or os.getenv('OLLAMA_HOST') or 'http://localhost:11434',
+            'base_url': '',  # No global default - must be configured per Locrit
             'default_model': self.get('ollama.default_model') or os.getenv('OLLAMA_DEFAULT_MODEL') or 'llama3.2',
             'timeout': self.get('ollama.timeout', 30)
         }
-        
-        # Extraire host et port depuis base_url si fourni
-        if config['base_url']:
-            try:
-                from urllib.parse import urlparse
-                parsed = urlparse(config['base_url'])
-                config['host'] = parsed.hostname or 'localhost'
-                config['port'] = parsed.port or 11434
-            except:
-                logger.warning("⚠️ Erreur parsing OLLAMA_HOST, utilisation des valeurs par défaut")
-                
-        logger.info(f"🤖 Configuration Ollama: {config['base_url']} | Modèle: {config['default_model']}")
+
         return config
         
     def get_firebase_config(self) -> Dict[str, str]:
@@ -191,22 +181,20 @@ class ConfigService:
         return firebase_config
     
     def get_ollama_url(self) -> str:
-        """Retourne l'URL complète du serveur Ollama"""
-        return self.get('ollama.base_url', 'http://localhost:11434')
-    
+        """
+        Retourne l'URL complète du serveur Ollama global (deprecated).
+        NOTE: Utilisez get_locrit_settings() pour obtenir l'ollama_url de chaque Locrit.
+        """
+        logger.warning("⚠️ get_ollama_url() est deprecated. Configurez ollama_url par Locrit.")
+        return self.get('ollama.base_url', '')
+
     def set_ollama_url(self, url: str) -> None:
-        """Définit l'URL du serveur Ollama"""
+        """
+        Définit l'URL du serveur Ollama global (deprecated).
+        NOTE: Configurez ollama_url directement dans les paramètres de chaque Locrit.
+        """
+        logger.warning("⚠️ set_ollama_url() est deprecated. Configurez ollama_url par Locrit.")
         self.set('ollama.base_url', url)
-        # Mettre à jour aussi host et port si possible
-        try:
-            from urllib.parse import urlparse
-            parsed = urlparse(url)
-            if parsed.hostname:
-                self.set('ollama.host', parsed.hostname)
-            if parsed.port:
-                self.set('ollama.port', parsed.port)
-        except:
-            pass
     
     def get_network_config(self) -> Dict[str, Any]:
         """Retourne la configuration réseau"""
@@ -243,7 +231,8 @@ class ConfigService:
                 'quick_memory': True,
                 'full_memory': False,
                 'llm_info': True
-            }
+            },
+            'ollama_url': ''  # Must be configured per Locrit
         })
     
     def update_locrit_settings(self, locrit_name: str, settings: Dict[str, Any]) -> None:

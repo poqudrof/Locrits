@@ -21,25 +21,25 @@ class ChatNamespace(Namespace):
 
     def on_connect(self):
         """Handle client connection"""
-        logger.info(f"Client connected to chat namespace")
+        logger.debug(f"Client connected to chat namespace")
 
-        # Log WebSocket connection
-        comprehensive_logger.log_websocket_event(
-            event_type="connect",
-            data={"namespace": "chat"}
-        )
+        # Log WebSocket connection (reduced verbosity)
+        # comprehensive_logger.log_websocket_event(
+        #     event_type="connect",
+        #     data={"namespace": "chat"}
+        # )
 
         emit('connected', {'status': 'connected'})
 
     def on_disconnect(self):
         """Handle client disconnection"""
-        logger.info(f"Client disconnected from chat namespace")
+        logger.debug(f"Client disconnected from chat namespace")
 
-        # Log WebSocket disconnection
-        comprehensive_logger.log_websocket_event(
-            event_type="disconnect",
-            data={"namespace": "chat"}
-        )
+        # Log WebSocket disconnection (reduced verbosity)
+        # comprehensive_logger.log_websocket_event(
+        #     event_type="disconnect",
+        #     data={"namespace": "chat"}
+        # )
 
     def on_join_chat(self, data):
         """Handle joining a chat room for a specific Locrit and session"""
@@ -50,15 +50,15 @@ class ChatNamespace(Namespace):
             # Create unique room for this conversation session
             room = f"chat_{locrit_name}_{session_id}"
             join_room(room)
-            logger.info(f"Client joined chat room: {room}")
+            logger.debug(f"Client joined chat room: {room}")
 
-            # Log WebSocket join chat event
-            comprehensive_logger.log_websocket_event(
-                event_type="join_chat",
-                locrit_name=locrit_name,
-                session_id=session_id,
-                data={"room": room}
-            )
+            # Log WebSocket join chat event (reduced verbosity)
+            # comprehensive_logger.log_websocket_event(
+            #     event_type="join_chat",
+            #     locrit_name=locrit_name,
+            #     session_id=session_id,
+            #     data={"room": room}
+            # )
 
             emit('joined_chat', {
                 'locrit_name': locrit_name,
@@ -94,17 +94,63 @@ class ChatNamespace(Namespace):
             emit('left_chat', {'locrit_name': locrit_name, 'session_id': session_id})
 
     def on_chat_message(self, data):
-        """Handle sending a message to a Locrit"""
+        """
+        Handle sending a message to a Locrit.
+        Supporte deux modes:
+        1. Avec conversation_id: utilise le service de conversation (contexte géré côté serveur)
+        2. Sans conversation_id mais avec session_id: mode legacy (pour compatibilité descendante)
+        """
         try:
             locrit_name = data.get('locrit_name')
             session_id = data.get('session_id')
+            conversation_id = data.get('conversation_id')
             message = data.get('message', '').strip()
             stream = data.get('stream', False)
 
-            if not locrit_name or not session_id or not message:
-                emit('error', {'message': 'Locrit name, session ID and message required'})
+            if not locrit_name or not message:
+                emit('error', {'message': 'Locrit name and message required'})
                 return
 
+            if not conversation_id and not session_id:
+                emit('error', {'message': 'Either conversation_id or session_id is required'})
+                return
+
+            # Si conversation_id est fourni, utiliser le service de conversation
+            if conversation_id:
+                from src.services.conversation_service import conversation_service
+
+                # Use conversation service (no streaming support yet in conversation service)
+                async def send_with_conversation():
+                    result = await conversation_service.send_message(
+                        conversation_id=conversation_id,
+                        message=message,
+                        save_to_memory=True
+                    )
+                    return result
+
+                result = asyncio.run(send_with_conversation())
+
+                if not result.get('success'):
+                    emit('error', {
+                        'locrit_name': locrit_name,
+                        'conversation_id': conversation_id,
+                        'message': result.get('error', 'Unknown error')
+                    })
+                    return
+
+                # Send the complete response (no streaming with conversation service)
+                emit('chat_response', {
+                    'locrit_name': locrit_name,
+                    'conversation_id': conversation_id,
+                    'response': result.get('response', ''),
+                    'timestamp': result.get('timestamp', datetime.now().isoformat()),
+                    'message_count': result.get('message_count', 0)
+                })
+
+                logger.info(f"WebSocket conversation message: {conversation_id} -> {locrit_name}")
+                return
+
+            # Mode legacy - utiliser session_id
             # Verify Locrit exists and is active
             settings = config_service.get_locrit_settings(locrit_name)
             if not settings:
@@ -119,8 +165,14 @@ class ChatNamespace(Namespace):
                 return
 
             # Get Ollama service
-            from src.services.ollama_service import get_ollama_service
-            ollama_service = get_ollama_service()
+            from src.services.ollama_service import get_ollama_service_for_locrit
+
+            try:
+                ollama_service = get_ollama_service_for_locrit(locrit_name)
+            except (ValueError, Exception) as e:
+                logger.error(f"Failed to get Ollama service for {locrit_name}: {e}")
+                emit('error', {'message': f'Ollama service unavailable: {str(e)}'})
+                return
 
             # Configure model
             model = settings.get('ollama_model')
@@ -131,7 +183,7 @@ class ChatNamespace(Namespace):
             # Test connection
             connection_test = ollama_service.test_connection()
             if not connection_test.get('success'):
-                emit('error', {'message': 'Ollama service unavailable'})
+                emit('error', {'message': 'Ollama service unavailable - connection failed'})
                 return
 
             # Set up user ID for memory (use session_id from frontend)

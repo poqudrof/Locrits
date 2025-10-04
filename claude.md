@@ -37,6 +37,14 @@ Dans les premières étapes on est focus sur :
 
 # Code instructions : 
 
+
+Each Locrit has its own ollama config. 
+If it fails to connect the server should respond with not available. 
+Never use local ollama (without url).
+
+
+To run the backend use the venv from .venv and run   python web_app.py
+
 Do not write code in the documentations. 
 
 The python UI using `textual` is deprecated. Do not 

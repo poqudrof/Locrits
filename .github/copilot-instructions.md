@@ -2,13 +2,11 @@
 
 ## Vue d'ensemble du projet
 
-Locrit est un système de gestion de chatbots autonomes appelés "locrits". Chaque locrit possède sa propre identité, agentivité et mémoire persistante, utilisant une interface TUI construite avec **Textual** et un serveur **Ollama** pour les modèles de langage. Voir `FEATURES.md` pour la description complète des fonctionnalités.
+Locrit est un système de gestion de chatbots autonomes appelés "locrits". Chaque locrit possède sa propre identité, agentivité et mémoire persistante, utilisant un serveur **Ollama** pour les modèles de langage. Voir `FEATURES.md` pour la description complète des fonctionnalités.
 
 ## Architecture et structure
 
-- **Point d'entrée** : `main.py` → importe et lance `LocritApp` depuis `src.app`
-- **Application principale** : `src/app.py` contient la classe `LocritApp` qui hérite de `textual.app.App`
-- **Interface utilisateur** : Layout vertical avec sections d'input, boutons et log
+- **Interface utilisateur** : Layout avec sections d'input, boutons et log
 - **État de développement** : Application en phase d'amorçage, architecture cible complexe (voir `FEATURES.md`)
 
 ### Architecture de données cible (Hybrid baseline)
@@ -21,13 +19,11 @@ Locrit est un système de gestion de chatbots autonomes appelés "locrits". Chaq
 
 ## Vue d'ensemble du projet
 
-Locrit est un système de gestion de chatbots autonomes appelés "locrits". Chaque locrit possède sa propre identité, agentivité et mémoire persistante, utilisant une interface TUI construite avec **Textual** et un serveur **Ollama** pour les modèles de langage. Voir `FEATURES.md` pour la description complète des fonctionnalités.
+Locrit est un système de gestion de chatbots autonomes appelés "locrits". Chaque locrit possède sa propre identité, agentivité et mémoire persistante, utilisant un serveur **Ollama** pour les modèles de langage. Voir `FEATURES.md` pour la description complète des fonctionnalités.
 
 ## Architecture et structure
 
-- **Point d'entrée** : `main.py` → importe et lance `LocritApp` depuis `src.app`
-- **Application principale** : `src/app.py` contient la classe `LocritApp` qui hérite de `textual.app.App`
-- **Interface utilisateur** : Layout vertical avec sections d'input, boutons et log
+- **Interface utilisateur** : Layout avec sections d'input, boutons et log
 - **État de développement** : Application en phase d'amorçage, architecture cible complexe (voir `FEATURES.md`)
 
 ### Architecture de données cible (Hybrid baseline)
@@ -36,37 +32,16 @@ Locrit est un système de gestion de chatbots autonomes appelés "locrits". Chaq
 - **Flux de requête** : Préfiltre métadonnées (SQL) → k-NN sur embeddings → rerank → bundle vers LLM
 
 ### Modes de fonctionnement prévus
-1. **Chat utilisateur** : Interface TUI directe (implémentation actuelle)
+1. **Chat utilisateur** : Interface directe (implémentation actuelle)
 2. **Mode serveur** : API pour communication avec autres locrits/LLMs
 3. **Mode client** : Connexion vers autres locrits/LLMs
 4. **Recherche internet** : Intégration DuckDuckGo autonome
 5. **Agentivité** : Actions multi-étapes, navigation web, communication inter-locrits
 
-## Patterns spécifiques à Textual
-
-### Structure des widgets et layout
-```python
-# Pattern de composition des widgets avec conteneurs
-with Container(classes="container"):
-    with Vertical(classes="input-section"):
-        yield Input(placeholder="...", id="search_input")
-    with Horizontal(classes="button-section"):
-        yield Button("🔍 Rechercher", id="search_btn", variant="primary")
-```
-
-### Gestion des événements
-- **IDs obligatoires** : Tous les widgets interactifs utilisent des IDs (`search_input`, `search_btn`, etc.)
-- **Pattern de récupération** : `self.query_one("#widget_id", WidgetType)` pour accéder aux widgets
-- **Gestionnaires d'événements** : `on_button_pressed()`, `on_input_submitted()` avec dispatch par ID
-
-### CSS intégré
-- CSS défini comme string dans la classe avec unités spéciales (`1fr` pour flex)
-- Classes CSS appliquées via `classes="nom-classe"` sur les conteneurs
 
 ## Dépendances et intégrations prévues
 
 Les dépendances dans `requirements.txt` révèlent l'architecture cible complexe :
-- **textual** : Framework TUI (implémenté)
 - **ollama** : Client LLM local pour chaque locrit (TODO dans `analyze_btn`)
 - **duckduckgo-search** : Recherche web autonome (TODO dans `search_btn`) 
 - **beautifulsoup4/lxml** : Parsing HTML pour navigation web agentive
@@ -120,7 +95,7 @@ Les TODOs dans `src/app.py` indiquent les prochaines étapes vers l'architecture
 
 ## Vue d'ensemble du projet
 
-Locrit est un système de gestion de chatbots autonomes appelés "locrits". Chaque locrit possède sa propre identité, agentivité et mémoire persistante, utilisant une interface TUI construite avec **Textual** et un serveur **Ollama** pour les modèles de langage. Voir `FEATURES.md` pour la description complète des fonctionnalités.
+Locrit est un système de gestion de chatbots autonomes appelés "locrits". Chaque locrit possède sa propre identité, agentivité et mémoire persistante, utilisant un serveur **Ollama** pour les modèles de langage. Voir `FEATURES.md` pour la description complète des fonctionnalités.
 
 ## Maintien de la documentation sur les fonctionnalités clés de l’application
 

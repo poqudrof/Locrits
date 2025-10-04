@@ -8,6 +8,7 @@ import pyrebase
 from typing import Optional, Dict, Any
 from dotenv import load_dotenv
 import logging
+from .comprehensive_logging_service import comprehensive_logger, LogLevel, LogCategory
 
 load_dotenv()
 logger = logging.getLogger(__name__)
@@ -51,12 +52,24 @@ class AuthService:
             user = self.auth.sign_in_anonymous()
             self.current_user = user
             self.auth_token = user["idToken"]
-            
+
             logger.info(f"Connexion anonyme réussie: {user['localId'][:8]}...")
+
+            # Log successful anonymous authentication
+            comprehensive_logger.log_system_event(
+                "auth_success",
+                f"Anonymous authentication successful for user {user['localId'][:8]}...",
+                data={
+                    "auth_type": "anonymous",
+                    "user_id": user["localId"],
+                    "provider": "anonymous"
+                }
+            )
+
             return {
                 "success": True,
                 "localId": user["localId"],
-                "uid": user["localId"], 
+                "uid": user["localId"],
                 "email": None,
                 "idToken": user["idToken"],
                 "refreshToken": user.get("refreshToken"),
@@ -64,9 +77,17 @@ class AuthService:
                 "is_anonymous": True,
                 "providerId": "anonymous"
             }
-            
+
         except Exception as e:
             logger.error(f"Erreur connexion anonyme: {e}")
+
+            # Log failed anonymous authentication
+            comprehensive_logger.log_error(
+                error=e,
+                context="Anonymous authentication",
+                additional_data={"auth_type": "anonymous"}
+            )
+
             return {
                 "success": False,
                 "error": str(e)
@@ -78,8 +99,20 @@ class AuthService:
             user = self.auth.sign_in_with_email_and_password(email, password)
             self.current_user = user
             self.auth_token = user["idToken"]
-            
+
             logger.info(f"Connexion email réussie: {email}")
+
+            # Log successful email authentication
+            comprehensive_logger.log_system_event(
+                "auth_success",
+                f"Email authentication successful for {email}",
+                data={
+                    "auth_type": "email",
+                    "email": email,
+                    "provider": "password"
+                }
+            )
+
             return {
                 "success": True,
                 "localId": user["localId"],
@@ -92,10 +125,21 @@ class AuthService:
                 "is_anonymous": False,
                 "providerId": "password"
             }
-            
+
         except Exception as e:
             error_msg = self._parse_auth_error(str(e))
             logger.error(f"Erreur connexion email: {error_msg}")
+
+            # Log failed email authentication
+            comprehensive_logger.log_error(
+                error=Exception(error_msg),
+                context="Email authentication",
+                additional_data={
+                    "auth_type": "email",
+                    "email": email
+                }
+            )
+
             return {
                 "success": False,
                 "error": error_msg
@@ -133,12 +177,31 @@ class AuthService:
     def sign_out(self):
         """Déconnexion"""
         try:
+            user_id = self.current_user.get("localId") if self.current_user else "unknown"
+
             self.current_user = None
             self.auth_token = None
             logger.info("Déconnexion réussie")
-            
+
+            # Log successful sign out
+            comprehensive_logger.log_system_event(
+                "auth_signout",
+                f"User {user_id[:8]}... signed out successfully",
+                data={
+                    "user_id": user_id,
+                    "auth_type": "signout"
+                }
+            )
+
         except Exception as e:
             logger.error(f"Erreur déconnexion: {e}")
+
+            # Log sign out error
+            comprehensive_logger.log_error(
+                error=e,
+                context="User sign out",
+                additional_data={"auth_type": "signout"}
+            )
     
     def refresh_token(self, refresh_token: str = None) -> Dict[str, Any]:
         """Rafraîchit le token d'authentification"""

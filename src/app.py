@@ -11,8 +11,9 @@ from textual.widgets import Header, Footer
 from .services.locrit_manager import LocritManager
 from .services.auth_service import AuthService
 from .services.config_service import config_service
-from .services.firestore_admin_service import firestore_admin_service
+from .services.unified_firebase_service import unified_firebase_service
 from .services.session_service import session_service
+from .services.comprehensive_logging_service import comprehensive_logger, LogLevel, LogCategory
 from .ui.auth_screen import AuthScreen
 from .ui.screens import HomeScreen
 
@@ -103,6 +104,13 @@ class LocritApp(App):
     async def _restore_session(self, session_data: dict):
         """Restaure une session Firebase sauvegardée"""
         try:
+            # Log session restoration attempt
+            comprehensive_logger.log_system_event(
+                "session_restore_attempt",
+                "Attempting to restore user session",
+                data={"has_session_data": session_data is not None}
+            )
+
             if not session_data:
                 raise ValueError("Session data is None")
 
@@ -144,11 +152,23 @@ class LocritApp(App):
             self.notify("🔄 Synchronisation avec le serveur...")
             print("🔍 Debug: Avant sync_all_locrits")
             try:
-                sync_result = await firestore_admin_service.sync_all_locrits()
-                print(f"🔍 Debug sync_result: {sync_result}")
-                
-                if sync_result and isinstance(sync_result, dict) and sync_result.get("status") == "success":
-                    self.notify("✅ Session restaurée et synchronisée")
+                # Set auth info for unified Firebase service
+                unified_firebase_service.set_auth_info(session_data)
+
+                # Push all Locrits to platform
+                locrits = config_service.list_locrits()
+                sync_results = []
+                for locrit_name in locrits:
+                    locrit_data = config_service.get_locrit_settings(locrit_name)
+                    if locrit_data:
+                        result = await unified_firebase_service.push_locrit_to_platform(locrit_name, locrit_data)
+                        sync_results.append(result)
+
+                successful_syncs = sum(1 for r in sync_results if r.get('success'))
+                print(f"🔍 Debug sync_results: {successful_syncs}/{len(sync_results)} successful")
+
+                if successful_syncs > 0:
+                    self.notify(f"✅ Session restaurée - {successful_syncs} Locrit(s) synchronisé(s)")
                 else:
                     self.notify("✅ Session restaurée (sync en arrière-plan)")
             except Exception as sync_error:
@@ -161,6 +181,17 @@ class LocritApp(App):
             home_screen = HomeScreen(session_data)
             self.push_screen(home_screen)
             print("🔍 Debug: Après push_screen")
+
+            # Log successful session restoration
+            comprehensive_logger.log_system_event(
+                "session_restore_success",
+                f"Session successfully restored for user {session_data.get('email', 'anonymous')}",
+                data={
+                    "user_id": session_data.get("user_id"),
+                    "email": session_data.get("email"),
+                    "auth_type": "session_restore"
+                }
+            )
             
         except Exception as e:
             self.notify(f"❌ Erreur restauration session: {str(e)}")
@@ -169,6 +200,13 @@ class LocritApp(App):
             traceback.print_exc()
             session_service.clear_session()
             self._show_auth_screen()
+
+            # Log failed session restoration
+            comprehensive_logger.log_error(
+                error=e,
+                context="Session restoration",
+                additional_data={"error_type": "session_restore_failed"}
+            )
 
     async def _auto_authenticate(self):
         """Authentification automatique anonyme"""

@@ -1,0 +1,14 @@
+When I start a conversation, I do not get a response anymore. 
+
+2025-10-03 22:29:23,659 - locrit_Bob Technique_comprehensive - INFO - {"timestamp": "2025-10-03T20:29:23.658846+00:00", "level": "info", "category": "websocket_connection", "event_type": "join_chat", "locrit_name": "Bob Technique", "session_id": "session_1759523363597_zuh2zjijm", "user_id": null, "message": "WebSocket join_chat", "data": {"room": "chat_Bob Technique_session_1759523363597_zuh2zjijm"}, "duration_ms": null, "error_details": null, "correlation_id": null}
+2025-10-03 22:29:23,662 - locrit_comprehensive - INFO - {"timestamp": "2025-10-03T20:29:23.658846+00:00", "level": "info", "category": "websocket_connection", "event_type": "join_chat", "locrit_name": "Bob Technique", "session_id": "session_1759523363597_zuh2zjijm", "user_id": null, "message": "WebSocket join_chat", "data": {"room": "chat_Bob Technique_session_1759523363597_zuh2zjijm"}, "duration_ms": null, "error_details": null, "correlation_id": null}
+2025-10-03 22:29:27,035 - src.services.config_service - INFO - 🤖 Configuration Ollama: http://localhost:11434 | Modèle: llama3.1:8b-instruct-q3_K_M 
+
+I only get this in Ollama : 
+
+time=2025-10-03T22:29:15.954+02:00 level=INFO source=gpu.go:217 msg="looking for compatible GPUs"
+time=2025-10-03T22:29:16.271+02:00 level=INFO source=types.go:130 msg="inference compute" id=GPU-c3928cc1-7d08-40eb-6dc4-e32648e9e3e1 library=cuda variant=v12 compute=8.6 driver=13.0 name="NVIDIA GeForce RTX 3060" total="11.6 GiB" available="11.2 GiB"
+time=2025-10-03T22:29:16.271+02:00 level=INFO source=routes.go:1425 msg="entering low vram mode" "total vram"="11.6 GiB" threshold="20.0 GiB"
+[GIN] 2025/10/03 - 22:29:27 | 200 |     2.15155ms |             ::1 | GET      "/api/tags"
+ 
+(it seems no response was generated)

@@ -1,0 +1,79 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Users collection
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null; // Public read for authenticated users
+
+      // User settings subcollection
+      match /settings/{document=**} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+
+      // User locrits subcollection
+      match /locrits/{locritId} {
+        allow read, write: if request.auth != null && request.auth.uid == userId;
+      }
+    }
+
+    // Global locrits collection
+    match /locrits/{locritId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null &&
+        (request.auth.uid == resource.data.ownerId ||
+         request.auth.uid == request.resource.data.ownerId);
+    }
+
+    // Conversations collection
+    match /conversations/{conversationId} {
+      // Allow listing/querying conversations for authenticated users
+      allow list: if request.auth != null;
+      // Allow reading specific conversation if user is participant or creator
+      allow get: if request.auth != null &&
+        (request.auth.uid == resource.data.createdBy ||
+         request.auth.uid in resource.data.participantIds);
+      // Allow creating conversation if user is authenticated
+      allow create: if request.auth != null;
+      // Allow updating/deleting if user is participant or creator
+      allow update, delete: if request.auth != null &&
+        (request.auth.uid == resource.data.createdBy ||
+         request.auth.uid in resource.data.participantIds);
+
+      // Messages subcollection within conversations
+      match /messages/{messageId} {
+        allow read, write: if request.auth != null &&
+          (request.auth.uid == get(/databases/$(database)/documents/conversations/$(conversationId)).data.createdBy ||
+           request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participantIds);
+      }
+    }
+
+    // Global messages collection
+    match /messages/{messageId} {
+      allow read, write: if request.auth != null &&
+        (request.auth.uid == resource.data.sender.id ||
+         (resource.data.conversationId != null &&
+          request.auth.uid in get(/databases/$(database)/documents/conversations/$(resource.data.conversationId)).data.participantIds) ||
+         (resource.data.locritId != null &&
+          request.auth.uid == getLocritOwner(resource.data.locritId)));
+    }
+
+    // Locrit logs collection
+    match /locrit_logs/{logId} {
+      allow read: if request.auth != null &&
+        request.auth.uid == getLocritOwner(resource.data.locritId);
+      allow write: if request.auth != null; // Locrits can write their own logs
+    }
+
+    // Platform sessions collection
+    match /platform_sessions/{sessionId} {
+      allow read, write: if request.auth != null && request.auth.uid == resource.data.userId;
+    }
+
+    // Helper function to get Locrit owner
+    function getLocritOwner(locritId) {
+      return get(/databases/$(database)/documents/locrits/$(locritId)).data.ownerId;
+    }
+  }
+}

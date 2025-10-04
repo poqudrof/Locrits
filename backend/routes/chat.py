@@ -8,6 +8,10 @@ from flask import Blueprint, render_template, request, session, flash, redirect,
 from backend.middleware.auth import login_required
 from src.services.config_service import config_service
 from src.services.ui_logging_service import ui_logging_service
+from src.services.comprehensive_logging_service import comprehensive_logger, LogLevel, LogCategory
+from langchain_community.chat_models import ChatOllama
+from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
+from langchain_core.callbacks import StreamingStdOutCallbackHandler
 
 chat_bp = Blueprint('chat', __name__)
 
@@ -38,52 +42,204 @@ def chat_with_locrit(locrit_name):
 
 
 @chat_bp.route('/api/locrits/<locrit_name>/chat', methods=['POST'])
-@login_required
-def api_chat_with_locrit(locrit_name):
-    """API pour envoyer un message à un Locrit"""
+async def api_chat_with_locrit(locrit_name):
+    """
+    API pour envoyer un message à un Locrit.
+    Supporte deux modes:
+    1. Avec conversation_id: utilise le service de conversation (contexte géré côté serveur)
+    2. Sans conversation_id: mode legacy (pour compatibilité descendante)
+    """
     try:
-        # Vérifier que le Locrit existe et est actif
-        settings = config_service.get_locrit_settings(locrit_name)
-        if not settings:
-            return jsonify({'error': 'Locrit non trouvé'}), 404
+        # Start operation tracking
+        operation_id = comprehensive_logger.start_operation(f"api_chat_{locrit_name}")
 
-        if not settings.get('active', False):
-            return jsonify({'error': 'Locrit inactif'}), 400
-
-        # Récupérer le message
+        # Récupérer le message et conversation_id optionnel
         data = request.get_json()
         if not data or 'message' not in data:
+            comprehensive_logger.log_api_request(
+                endpoint=f"/api/locrits/{locrit_name}/chat",
+                method="POST",
+                locrit_name=locrit_name,
+                status_code=400,
+                error="Message required"
+            )
             return jsonify({'error': 'Message requis'}), 400
 
         message = data['message'].strip()
         if not message:
+            comprehensive_logger.log_api_request(
+                endpoint=f"/api/locrits/{locrit_name}/chat",
+                method="POST",
+                locrit_name=locrit_name,
+                status_code=400,
+                error="Empty message"
+            )
             return jsonify({'error': 'Message vide'}), 400
 
-        # Utiliser le service Ollama pour générer la réponse
-        from src.services.ollama_service import get_ollama_service
-        ollama_service = get_ollama_service()
+        conversation_id = data.get('conversation_id')
+
+        # Si conversation_id est fourni, utiliser le service de conversation
+        if conversation_id:
+            from src.services.conversation_service import conversation_service
+
+            result = await conversation_service.send_message(
+                conversation_id=conversation_id,
+                message=message,
+                save_to_memory=True
+            )
+
+            # End operation tracking
+            duration_ms = comprehensive_logger.end_operation(operation_id)
+
+            if not result.get('success'):
+                error_msg = result.get('error', 'Unknown error')
+                status_code = 404 if 'not found' in error_msg.lower() else 500
+
+                comprehensive_logger.log_api_request(
+                    endpoint=f"/api/locrits/{locrit_name}/chat",
+                    method="POST",
+                    locrit_name=locrit_name,
+                    duration_ms=duration_ms,
+                    status_code=status_code,
+                    error=error_msg
+                )
+                return jsonify(result), status_code
+
+            # Log successful API request
+            comprehensive_logger.log_api_request(
+                endpoint=f"/api/locrits/{locrit_name}/chat",
+                method="POST",
+                locrit_name=locrit_name,
+                duration_ms=duration_ms,
+                status_code=200,
+                data={
+                    "conversation_id": conversation_id,
+                    "message_count": result.get('message_count', 0)
+                }
+            )
+
+            return jsonify(result)
+
+        # Mode legacy - sans conversation_id (pour compatibilité descendante)
+        # Vérifier que le Locrit existe et est actif
+        settings = config_service.get_locrit_settings(locrit_name)
+        if not settings:
+            comprehensive_logger.log_api_request(
+                endpoint=f"/api/locrits/{locrit_name}/chat",
+                method="POST",
+                locrit_name=locrit_name,
+                status_code=404,
+                error="Locrit not found"
+            )
+            return jsonify({'error': 'Locrit non trouvé'}), 404
+
+        if not settings.get('active', False):
+            comprehensive_logger.log_api_request(
+                endpoint=f"/api/locrits/{locrit_name}/chat",
+                method="POST",
+                locrit_name=locrit_name,
+                status_code=400,
+                error="Locrit inactive"
+            )
+            return jsonify({'error': 'Locrit inactif'}), 400
 
         # Configurer le modèle du Locrit
         model = settings.get('ollama_model')
         if not model:
             return jsonify({'error': 'Aucun modèle configuré pour ce Locrit'}), 400
 
+        # Utiliser LangChain avec ChatOllama
+        from src.services.ollama_service import get_ollama_service_for_locrit
+        from src.services.memory_manager_service import memory_manager
+
+        try:
+            ollama_service = get_ollama_service_for_locrit(locrit_name)
+        except (ValueError, Exception) as e:
+            logger.error(f"Failed to get Ollama service for {locrit_name}: {e}")
+            return jsonify({'error': f'Service Ollama non disponible: {str(e)}'}), 503
+
         # Test de connexion
         connection_test = ollama_service.test_connection()
         if not connection_test.get('success'):
-            return jsonify({'error': 'Service Ollama non disponible'}), 500
+            return jsonify({'error': 'Service Ollama non disponible - connexion échouée'}), 503
+
+        # Sauvegarder le message utilisateur dans la mémoire du Locrit
+        user_id = session.get('user_name', 'web_user') if 'user_name' in session else 'anonymous_user'
+        session_id = f"web_{user_id}_{locrit_name}"
+
+        try:
+            # Sauvegarder le message utilisateur
+            asyncio.run(memory_manager.save_message(
+                locrit_name=locrit_name,
+                role="user",
+                content=message,
+                session_id=session_id,
+                user_id=user_id
+            ))
+        except Exception as e:
+            logger.warning(f"Erreur sauvegarde message utilisateur: {e}")
 
         # Préparer le prompt système basé sur la description du Locrit
         system_prompt = f"Tu es {locrit_name}, un Locrit. {settings.get('description', '')}"
 
-        # Pour l'instant, utiliser une réponse synchrone simple
-        # Le streaming sera ajouté dans la prochaine étape
         try:
-            ollama_service.current_model = model
-            ollama_service.is_connected = True
-            ollama_service.available_models = connection_test.get('models', [])
+            # Récupérer l'historique de conversation depuis la mémoire Kuzu
+            conversation_history = []
+            try:
+                # Récupérer les derniers messages de cette session (limite à 20 pour éviter de surcharger le contexte)
+                history_messages = asyncio.run(memory_manager.get_conversation_history(
+                    locrit_name=locrit_name,
+                    session_id=session_id,
+                    limit=20
+                ))
 
-            response = asyncio.run(ollama_service.chat(message, system_prompt))
+                # Convertir l'historique en messages LangChain
+                for msg in history_messages:
+                    if msg.get('role') == 'user':
+                        conversation_history.append(HumanMessage(content=msg.get('content', '')))
+                    elif msg.get('role') == 'assistant':
+                        conversation_history.append(AIMessage(content=msg.get('content', '')))
+
+            except Exception as e:
+                logger.warning(f"Erreur récupération historique conversation: {e}")
+                # Continuer sans historique si la récupération échoue
+
+            # Use the Ollama service directly with proper Locrit context
+            response = await ollama_service.chat(
+                message=message,
+                system_prompt=system_prompt,
+                locrit_name=locrit_name
+            )
+
+            # Sauvegarder la réponse dans la mémoire du Locrit
+            try:
+                asyncio.run(memory_manager.save_message(
+                    locrit_name=locrit_name,
+                    role="assistant",
+                    content=response,
+                    session_id=session_id,
+                    user_id=user_id
+                ))
+            except Exception as e:
+                logger.warning(f"Erreur sauvegarde réponse: {e}")
+
+            # End operation tracking
+            duration_ms = comprehensive_logger.end_operation(operation_id)
+
+            # Log successful API request
+            comprehensive_logger.log_api_request(
+                endpoint=f"/api/locrits/{locrit_name}/chat",
+                method="POST",
+                locrit_name=locrit_name,
+                duration_ms=duration_ms,
+                status_code=200,
+                data={
+                    "model": model,
+                    "message_length": len(message),
+                    "response_length": len(response),
+                    "mode": "legacy"
+                }
+            )
 
             return jsonify({
                 'success': True,
@@ -93,11 +249,39 @@ def api_chat_with_locrit(locrit_name):
             })
 
         except Exception as e:
+            # End operation tracking for failed request
+            duration_ms = comprehensive_logger.end_operation(operation_id)
+
             logger.error(f"Erreur lors de la génération de la réponse: {str(e)}")
+
+            # Log failed API request
+            comprehensive_logger.log_api_request(
+                endpoint=f"/api/locrits/{locrit_name}/chat",
+                method="POST",
+                locrit_name=locrit_name,
+                duration_ms=duration_ms,
+                status_code=500,
+                error=str(e)
+            )
+
             return jsonify({'error': f'Erreur de génération: {str(e)}'}), 500
 
     except Exception as e:
+        # End operation tracking for failed request
+        if 'operation_id' in locals():
+            duration_ms = comprehensive_logger.end_operation(operation_id)
+
         logger.error(f"Erreur dans l'API chat: {str(e)}")
+
+        # Log failed API request
+        comprehensive_logger.log_api_request(
+            endpoint=f"/api/locrits/{locrit_name}/chat",
+            method="POST",
+            locrit_name=locrit_name,
+            status_code=500,
+            error=str(e)
+        )
+
         return jsonify({'error': str(e)}), 500
 
 
@@ -123,47 +307,56 @@ def api_chat_stream_with_locrit(locrit_name):
         if not message:
             return jsonify({'error': 'Message vide'}), 400
 
-        # Utiliser le service Ollama pour générer la réponse
-        from src.services.ollama_service import get_ollama_service
-        ollama_service = get_ollama_service()
-
         # Configurer le modèle du Locrit
         model = settings.get('ollama_model')
         if not model:
             return jsonify({'error': 'Aucun modèle configuré pour ce Locrit'}), 400
 
+        # Utiliser LangChain avec ChatOllama
+        from src.services.ollama_service import get_ollama_service_for_locrit
+
+        try:
+            ollama_service = get_ollama_service_for_locrit(locrit_name)
+        except (ValueError, Exception) as e:
+            logger.error(f"Failed to get Ollama service for {locrit_name}: {e}")
+            return jsonify({'error': f'Service Ollama non disponible: {str(e)}'}), 503
+
         # Test de connexion
         connection_test = ollama_service.test_connection()
         if not connection_test.get('success'):
-            return jsonify({'error': 'Service Ollama non disponible'}), 500
+            return jsonify({'error': 'Service Ollama non disponible - connexion échouée'}), 503
 
         # Préparer le prompt système
         system_prompt = f"Tu es {locrit_name}, un Locrit. {settings.get('description', '')}"
 
         def generate_stream():
-            """Générateur pour le streaming"""
+            """Générateur pour le streaming avec LangChain"""
             try:
-                # Utiliser le client Ollama synchrone avec streaming
-                import ollama
+                # Classe de callback personnalisée pour le streaming
+                class StreamingCallback:
+                    def __init__(self):
+                        self.tokens = []
 
-                client = ollama.Client(host=ollama_service.base_url)
+                    def on_llm_new_token(self, token: str, **kwargs) -> None:
+                        self.tokens.append(token)
 
-                messages = []
-                if system_prompt:
-                    messages.append({"role": "system", "content": system_prompt})
-                messages.append({"role": "user", "content": message})
-
-                stream = client.chat(
+                # Initialiser ChatOllama avec LangChain
+                chat_model = ChatOllama(
                     model=model,
-                    messages=messages,
-                    stream=True
+                    base_url=ollama_service.base_url,
+                    temperature=0.7
                 )
 
-                for chunk in stream:
-                    if 'message' in chunk and 'content' in chunk['message']:
-                        content = chunk['message']['content']
-                        if content:
-                            yield f"data: {json.dumps({'chunk': content, 'done': False})}\\n\\n"
+                # Préparer les messages
+                messages = [
+                    SystemMessage(content=system_prompt),
+                    HumanMessage(content=message)
+                ]
+
+                # Streamer avec LangChain
+                for chunk in chat_model.stream(messages):
+                    if chunk.content:
+                        yield f"data: {json.dumps({'chunk': chunk.content, 'done': False})}\\n\\n"
 
                 yield f"data: {json.dumps({'done': True})}\\n\\n"
 

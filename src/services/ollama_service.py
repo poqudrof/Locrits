@@ -6,22 +6,33 @@ import asyncio
 from typing import Optional, Dict, Any, AsyncGenerator
 import ollama
 from ollama import AsyncClient
+from .comprehensive_logging_service import comprehensive_logger, LogLevel, LogCategory
 
 
 class OllamaService:
     """Service pour gérer la connexion et communication avec Ollama."""
-    
-    def __init__(self, host: str = "localhost", port: int = 11434):
+
+    def __init__(self, base_url: str):
         """
         Initialise le service Ollama.
-        
+
         Args:
-            host: Adresse du serveur Ollama
-            port: Port du serveur Ollama
+            base_url: URL complète du serveur Ollama (ex: http://server.example.com:11434)
+
+        Raises:
+            ValueError: Si base_url n'est pas fourni
         """
-        self.host = host
-        self.port = port
-        self.base_url = f"http://{host}:{port}"
+        if not base_url:
+            raise ValueError("base_url est obligatoire. Chaque Locrit doit avoir son propre serveur Ollama configuré.")
+
+        self.base_url = base_url.rstrip('/')
+
+        # Extract host and port for logging
+        import urllib.parse
+        parsed = urllib.parse.urlparse(self.base_url)
+        self.host = parsed.hostname or 'unknown'
+        self.port = parsed.port or 11434
+
         self.client = AsyncClient(host=self.base_url)
         self.is_connected = False
         self.available_models = []
@@ -39,16 +50,30 @@ class OllamaService:
             response = await self.client.list()
             self.available_models = [model['name'] for model in response['models']]
             self.is_connected = True
-            
+
             # Sélectionner un modèle par défaut si disponible
             if self.available_models and not self.current_model:
                 self.current_model = self.available_models[0]
-            
+
+            # Log successful connection
+            comprehensive_logger.log_system_event(
+                "ollama_connection_success",
+                f"Connected to Ollama at {self.host}:{self.port}, found {len(self.available_models)} models"
+            )
+
             return True
         except Exception as e:
             self.is_connected = False
             self.available_models = []
             print(f"Erreur de connexion Ollama : {e}")
+
+            # Log connection failure
+            comprehensive_logger.log_error(
+                error=e,
+                context="Ollama connection test",
+                additional_data={"host": self.host, "port": self.port}
+            )
+
             return False
     
     async def disconnect(self) -> None:
@@ -71,7 +96,7 @@ class OllamaService:
             "available_models": self.available_models
         }
     
-    async def chat(self, message: str, system_prompt: Optional[str] = None) -> str:
+    async def chat(self, message: str, system_prompt: Optional[str] = None, locrit_name: Optional[str] = None) -> str:
         """
         Envoie un message au modèle et retourne la réponse.
         
@@ -97,15 +122,49 @@ class OllamaService:
         messages.append({"role": "user", "content": message})
         
         try:
+            # Start operation tracking
+            operation_id = comprehensive_logger.start_operation("ollama_chat_request")
+
+            # Log the request
+            comprehensive_logger.log_ollama_request(
+                model=self.current_model,
+                messages=messages,
+                locrit_name=locrit_name or "system",
+                stream=False
+            )
+
             response = await self.client.chat(
                 model=self.current_model,
                 messages=messages
             )
+
+            # End operation tracking
+            duration_ms = comprehensive_logger.end_operation(operation_id)
+
+            # Log the response
+            comprehensive_logger.log_ollama_response(
+                model=self.current_model,
+                response=response['message']['content'],
+                locrit_name=locrit_name or "system",
+                duration_ms=duration_ms
+            )
+
             return response['message']['content']
         except Exception as e:
+            # End operation tracking for failed request
+            if 'operation_id' in locals():
+                duration_ms = comprehensive_logger.end_operation(operation_id)
+                comprehensive_logger.log_ollama_response(
+                    model=self.current_model,
+                    response="",
+                    locrit_name=locrit_name or "system",
+                    duration_ms=duration_ms,
+                    error=str(e)
+                )
+
             raise Exception(f"Erreur lors du chat : {e}")
     
-    async def chat_stream(self, message: str, system_prompt: Optional[str] = None) -> AsyncGenerator[str, None]:
+    async def chat_stream(self, message: str, system_prompt: Optional[str] = None, locrit_name: Optional[str] = None) -> AsyncGenerator[str, None]:
         """
         Envoie un message et retourne un stream de réponse.
         
@@ -128,6 +187,17 @@ class OllamaService:
         messages.append({"role": "user", "content": message})
         
         try:
+            # Start operation tracking
+            operation_id = comprehensive_logger.start_operation("ollama_chat_stream_request")
+
+            # Log the request
+            comprehensive_logger.log_ollama_request(
+                model=self.current_model,
+                messages=messages,
+                locrit_name=locrit_name or "system",
+                stream=True
+            )
+
             async for chunk in await self.client.chat(
                 model=self.current_model,
                 messages=messages,
@@ -135,7 +205,30 @@ class OllamaService:
             ):
                 if 'message' in chunk and 'content' in chunk['message']:
                     yield chunk['message']['content']
+
+            # End operation tracking
+            duration_ms = comprehensive_logger.end_operation(operation_id)
+
+            # Log successful streaming completion
+            comprehensive_logger.log_ollama_response(
+                model=self.current_model,
+                response="[STREAM_COMPLETED]",
+                locrit_name=locrit_name or "system",
+                duration_ms=duration_ms
+            )
+
         except Exception as e:
+            # End operation tracking for failed request
+            if 'operation_id' in locals():
+                duration_ms = comprehensive_logger.end_operation(operation_id)
+                comprehensive_logger.log_ollama_response(
+                    model=self.current_model,
+                    response="",
+                    locrit_name=locrit_name or "system",
+                    duration_ms=duration_ms,
+                    error=str(e)
+                )
+
             raise Exception(f"Erreur lors du chat stream : {e}")
     
     async def set_model(self, model_name: str) -> bool:
@@ -209,31 +302,48 @@ class OllamaService:
             }
 
 
-# Instance globale du service Ollama (sera initialisée avec la config)
-ollama_service = None
+def get_ollama_service_for_locrit(locrit_name: str) -> Optional[OllamaService]:
+    """
+    Récupère l'instance du service Ollama pour un Locrit spécifique.
 
-def get_ollama_service():
-    """Récupère ou crée l'instance du service Ollama avec la configuration actuelle"""
-    global ollama_service
+    Args:
+        locrit_name: Nom du Locrit
 
-    if ollama_service is None:
-        # Charger la configuration
-        try:
-            from .config_service import config_service
-            ollama_config = config_service.get_ollama_config()
+    Returns:
+        OllamaService configuré pour ce Locrit ou None si pas de configuration
 
-            # Parser l'URL pour extraire host et port
-            import urllib.parse
-            parsed = urllib.parse.urlparse(ollama_config['base_url'])
-            host = parsed.hostname or 'localhost'
-            port = parsed.port or 11434
+    Raises:
+        ValueError: Si le Locrit n'a pas de base_url configuré
+    """
+    try:
+        from .config_service import config_service
 
-            ollama_service = OllamaService(host=host, port=port)
-        except Exception:
-            # Valeurs par défaut si erreur de config
-            ollama_service = OllamaService()
+        # Récupérer les paramètres du Locrit
+        locrit_settings = config_service.get_locrit_settings(locrit_name)
+        if not locrit_settings:
+            comprehensive_logger.log_error(
+                error=ValueError(f"Locrit '{locrit_name}' non trouvé"),
+                context="get_ollama_service_for_locrit"
+            )
+            return None
 
-    return ollama_service
+        # Chaque Locrit doit avoir son propre ollama_url
+        ollama_url = locrit_settings.get('ollama_url')
+        if not ollama_url:
+            error_msg = f"Locrit '{locrit_name}' n'a pas de 'ollama_url' configuré"
+            comprehensive_logger.log_error(
+                error=ValueError(error_msg),
+                context="get_ollama_service_for_locrit"
+            )
+            raise ValueError(error_msg)
 
-# Créer l'instance par défaut
-ollama_service = get_ollama_service()
+        # Créer le service avec l'URL du Locrit
+        return OllamaService(base_url=ollama_url)
+
+    except Exception as e:
+        comprehensive_logger.log_error(
+            error=e,
+            context="get_ollama_service_for_locrit",
+            additional_data={"locrit_name": locrit_name}
+        )
+        raise

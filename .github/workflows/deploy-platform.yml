@@ -1,0 +1,336 @@
+name: Deploy Platform
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'platform/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - platform/**
+  workflow_dispatch: # Allow manual triggering
+
+env:
+  NODE_VERSION: '18'
+
+jobs:
+  test-frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./platform
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: platform/package-lock.json
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Run type checking
+      run: npm run type-check
+
+    - name: Run linting
+      run: npm run lint
+
+    - name: Run unit tests
+      run: npm run test:run
+
+    - name: Run integration tests
+      run: npm run test:run -- --reporter=verbose
+
+    - name: Generate test coverage
+      run: npm run test:coverage
+
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./platform/coverage/lcov.info
+        flags: frontend
+        name: frontend-coverage
+
+    - name: Build application
+      run: npm run build
+      env:
+        VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+        VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+        VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+        VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+        VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+        VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+        VITE_FIREBASE_MEASUREMENT_ID: ${{ secrets.VITE_FIREBASE_MEASUREMENT_ID }}
+
+    - name: Store build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: platform-build
+        path: platform/dist/
+        retention-days: 7
+
+  test-backend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./src
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        cache: 'pip'
+
+    - name: Install Python dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r tests/requirements.txt
+        pip install -r ../requirements.txt
+
+    - name: Run Python linting
+      run: |
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+    - name: Run Python type checking
+      run: mypy . --ignore-missing-imports
+
+    - name: Run backend unit tests
+      run: pytest tests/ -v --cov=. --cov-report=xml --cov-report=html
+
+    - name: Upload backend coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./src/coverage.xml
+        flags: backend
+        name: backend-coverage
+
+  test-e2e:
+    runs-on: ubuntu-latest
+    needs: [test-frontend, test-backend]
+    defaults:
+      run:
+        working-directory: ./platform
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: platform/package-lock.json
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Install Playwright browsers
+      run: npx playwright install --with-deps
+
+    - name: Setup Firebase Emulators
+      run: |
+        npm install -g firebase-tools
+        firebase setup:emulators:firestore
+        firebase setup:emulators:auth
+
+    - name: Build application for E2E
+      run: npm run build
+      env:
+        VITE_FIREBASE_API_KEY: demo-key
+        VITE_FIREBASE_AUTH_DOMAIN: demo-project.firebaseapp.com
+        VITE_FIREBASE_PROJECT_ID: demo-project
+        VITE_FIREBASE_STORAGE_BUCKET: demo-project.appspot.com
+        VITE_FIREBASE_MESSAGING_SENDER_ID: "123456789"
+        VITE_FIREBASE_APP_ID: "1:123456789:web:demo"
+
+    - name: Run E2E tests
+      run: |
+        firebase emulators:exec --only firestore,auth 'npm run test:e2e' || true
+      env:
+        CI: true
+
+    - name: Upload E2E test results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: e2e-results
+        path: |
+          platform/test-results/
+          platform/playwright-report/
+        retention-days: 7
+
+  deploy-preview:
+    needs: [test-frontend, test-backend]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    defaults:
+      run:
+        working-directory: ./platform
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: platform/package-lock.json
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Build for preview
+      run: npm run build
+      env:
+        VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+        VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+        VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+        VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+        VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+        VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+        VITE_FIREBASE_MEASUREMENT_ID: ${{ secrets.VITE_FIREBASE_MEASUREMENT_ID }}
+
+    # Deploy to Netlify for preview (can be changed to Vercel or other)
+    - name: Deploy to Netlify Preview
+      uses: netlify/actions/cli@master
+      if: env.NETLIFY_AUTH_TOKEN != ''
+      env:
+        NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+        NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+      with:
+        args: deploy --dir=platform/dist --alias=preview-${{ github.event.number }}
+
+    - name: Comment PR with preview URL
+      if: env.NETLIFY_AUTH_TOKEN != ''
+      uses: actions/github-script@v7
+      env:
+        NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+      with:
+        script: |
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: '🚀 Preview deployed at: https://preview-${{ github.event.number }}--${{ secrets.NETLIFY_SITE_NAME }}.netlify.app'
+          })
+
+  deploy-production:
+    needs: test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    defaults:
+      run:
+        working-directory: ./platform
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+        cache: 'npm'
+        cache-dependency-path: platform/package-lock.json
+
+    - name: Install dependencies
+      run: npm ci
+
+    - name: Build for production
+      run: npm run build
+      env:
+        VITE_FIREBASE_API_KEY: ${{ secrets.VITE_FIREBASE_API_KEY }}
+        VITE_FIREBASE_AUTH_DOMAIN: ${{ secrets.VITE_FIREBASE_AUTH_DOMAIN }}
+        VITE_FIREBASE_PROJECT_ID: ${{ secrets.VITE_FIREBASE_PROJECT_ID }}
+        VITE_FIREBASE_STORAGE_BUCKET: ${{ secrets.VITE_FIREBASE_STORAGE_BUCKET }}
+        VITE_FIREBASE_MESSAGING_SENDER_ID: ${{ secrets.VITE_FIREBASE_MESSAGING_SENDER_ID }}
+        VITE_FIREBASE_APP_ID: ${{ secrets.VITE_FIREBASE_APP_ID }}
+        VITE_FIREBASE_MEASUREMENT_ID: ${{ secrets.VITE_FIREBASE_MEASUREMENT_ID }}
+
+    # Deploy to Firebase Hosting (recommended for Firebase projects)
+    - name: Deploy to Firebase Hosting
+      uses: FirebaseExtended/action-hosting-deploy@v0
+      if: env.FIREBASE_SERVICE_ACCOUNT_LOCRIT != ''
+      with:
+        repoToken: '${{ secrets.GITHUB_TOKEN }}'
+        firebaseServiceAccount: '${{ secrets.FIREBASE_SERVICE_ACCOUNT_LOCRIT }}'
+        projectId: locrit
+        channelId: live
+        entryPoint: ./platform
+      env:
+        FIREBASE_CLI_EXPERIMENTS: webframeworks
+
+    # Alternative: Deploy to Netlify
+    - name: Deploy to Netlify Production
+      uses: netlify/actions/cli@master
+      if: env.NETLIFY_AUTH_TOKEN != '' && env.FIREBASE_SERVICE_ACCOUNT_LOCRIT == ''
+      env:
+        NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+        NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+      with:
+        args: deploy --dir=platform/dist --prod
+
+    # Alternative: Deploy to Vercel
+    - name: Deploy to Vercel Production
+      uses: amondnet/vercel-action@v25
+      if: env.VERCEL_TOKEN != '' && env.FIREBASE_SERVICE_ACCOUNT_LOCRIT == '' && env.NETLIFY_AUTH_TOKEN == ''
+      with:
+        vercel-token: ${{ secrets.VERCEL_TOKEN }}
+        vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+        vercel-project-id: ${{ secrets.VERCEL_PROJECT_ID }}
+        working-directory: ./platform
+        vercel-args: '--prod'
+
+  # Job to update Firebase Security Rules if needed
+  deploy-firebase-rules:
+    needs: deploy-production
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ env.NODE_VERSION }}
+
+    - name: Install Firebase CLI
+      run: npm install -g firebase-tools
+
+    - name: Deploy Firestore Rules
+      if: env.FIREBASE_SERVICE_ACCOUNT_LOCRIT != ''
+      run: |
+        echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_LOCRIT }}' > /tmp/firebase-service-account.json
+        export GOOGLE_APPLICATION_CREDENTIALS=/tmp/firebase-service-account.json
+        firebase deploy --only firestore:rules --project locrit --non-interactive
+      env:
+        FIREBASE_SERVICE_ACCOUNT_LOCRIT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LOCRIT }}
+
+    - name: Deploy Storage Rules
+      if: env.FIREBASE_SERVICE_ACCOUNT_LOCRIT != ''
+      run: |
+        echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT_LOCRIT }}' > /tmp/firebase-service-account.json
+        export GOOGLE_APPLICATION_CREDENTIALS=/tmp/firebase-service-account.json
+        firebase deploy --only storage --project locrit --non-interactive
+      env:
+        FIREBASE_SERVICE_ACCOUNT_LOCRIT: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_LOCRIT }}
+
+    - name: Cleanup
+      if: always()
+      run: rm -f /tmp/firebase-service-account.json

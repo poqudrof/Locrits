@@ -54,9 +54,11 @@ class LocalBackupService:
                 "session_data": session_data
             }
             
+            print(f"📝 FILE WRITE: {backup_path} (mode: w, type: json)")
             with open(backup_path, 'w', encoding='utf-8') as f:
                 json.dump(backup_data, f, indent=2, ensure_ascii=False)
-            
+            print(f"✅ FILE WRITE: {backup_path} completed")
+
             self.logger.info(f"💾 Session sauvegardée: {filename}")
             
             # Nettoyer les anciennes sauvegardes (garder les 10 dernières)
@@ -93,9 +95,10 @@ class LocalBackupService:
             if not target_file:
                 target_file = session_files[0]
             
+            print(f"📖 FILE READ: {target_file} (mode: r, type: json)")
             with open(target_file, 'r', encoding='utf-8') as f:
                 backup_data = json.load(f)
-            
+
             session_data = backup_data.get('session_data', {})
             self.logger.info(f"📥 Session restaurée: {target_file.name}")
             
@@ -121,9 +124,11 @@ class LocalBackupService:
                 "ollama_config": ollama_config
             }
             
+            print(f"📝 FILE WRITE: {backup_path} (mode: w, type: json)")
             with open(backup_path, 'w', encoding='utf-8') as f:
                 json.dump(backup_data, f, indent=2, ensure_ascii=False)
-            
+            print(f"✅ FILE WRITE: {backup_path} completed")
+
             self.logger.info(f"💾 Config Ollama sauvegardée: {filename}")
             
             # Nettoyer les anciennes sauvegardes
@@ -158,9 +163,11 @@ class LocalBackupService:
                 "locrits_data": locrits_data
             }
             
+            print(f"📝 FILE WRITE: {backup_path} (mode: w, type: json)")
             with open(backup_path, 'w', encoding='utf-8') as f:
                 json.dump(backup_data, f, indent=2, ensure_ascii=False)
-            
+            print(f"✅ FILE WRITE: {backup_path} completed")
+
             self.logger.info(f"💾 {len(locrits_data)} Locrits sauvegardés: {filename}")
             
             # Nettoyer les anciennes sauvegardes
@@ -185,9 +192,10 @@ class LocalBackupService:
                     return False
                 backup_path = max(backup_files, key=lambda x: x.stat().st_mtime)
             
+            print(f"📖 FILE READ: {backup_path} (mode: r, type: json)")
             with open(backup_path, 'r', encoding='utf-8') as f:
                 backup_data = json.load(f)
-            
+
             locrits_data = backup_data.get('locrits_data', {})
             
             # Restaurer chaque Locrit

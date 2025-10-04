@@ -136,7 +136,8 @@ interface LocritSettings {
 interface Conversation {
   id: string;                    // ID auto-généré
   title: string;                 // Titre de la conversation
-  participants: ConversationParticipant[]; // Liste des participants
+  participants: ConversationParticipant[]; // Liste des participants (pour affichage)
+  participantIds: string[];      // Liste des IDs des participants (pour les règles de sécurité)
   type: 'user-locrit' | 'locrit-locrit';   // Type de conversation
   isActive: boolean;             // Conversation active ou archivée
   lastActivity: Timestamp;       // Dernière activité
@@ -238,12 +239,12 @@ service cloud.firestore {
     // Règles pour les conversations
     match /conversations/{conversationId} {
       allow read, write: if request.auth != null && 
-        request.auth.uid in resource.data.participants[].id;
+        request.auth.uid in resource.data.participantIds;
       
       // Messages dans les conversations
       match /messages/{messageId} {
         allow read, write: if request.auth != null && 
-          request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants[].id;
+          request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participantIds;
       }
     }
     

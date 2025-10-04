@@ -1,0 +1,45 @@
+# Locrits Memory System Configuration
+# This file controls how memories are stored, managed, and updated
+
+memory:
+  # Base configuration
+  base_path: "data/memory"  # Directory for memory storage
+  debug: false              # Enable debug logging
+
+  # Vector memory configuration (fuzzy/semantic memories)
+  vector:
+    enabled: true                    # Enable vector memory service
+    model: "nomic-embed-text"        # Use Ollama model (pulled locally)
+    dimension: 768                   # Embedding dimension for nomic-embed-text
+    inference_mode: "ollama"         # Use Ollama for embeddings
+    ollama_base_url: "http://localhost:11434"  # Ollama server URL
+    similarity_threshold: 0.7        # Minimum similarity for matches
+    max_memories: 10000              # Maximum vector memories to store
+    cleanup_threshold: 0.3           # Delete memories below this similarity
+
+  # Graph memory configuration (structured/precise memories)
+  graph:
+    enabled: true                      # Enable graph memory service
+    max_concepts_per_message: 5        # Max concepts to extract per message
+    concept_confidence_threshold: 0.7  # Minimum confidence for concepts
+    relationship_strength_threshold: 0.5  # Minimum strength for relationships
+    max_relationship_depth: 3          # Maximum depth for relationship queries
+    auto_create_relationships: true    # Automatically link related concepts
+
+  # Memory update scheduling
+  updates:
+    auto_update: true           # Automatically update memories
+    update_interval: 10         # Update every N messages
+    force_update_on_user_request: true  # Allow user to trigger updates
+    update_on_session_end: true # Update when conversation session ends
+    batch_update: true          # Process memories in batches
+    max_batch_size: 50          # Maximum memories per batch
+
+  # Memory retention policies
+  retention:
+    default_retention_days: 365      # Keep memories for 1 year by default
+    critical_retention_days: -1      # Never delete critical memories (-1 = forever)
+    low_importance_retention_days: 30  # Keep low-importance memories for 30 days
+    ephemeral_retention_hours: 24    # Keep ephemeral memories for 24 hours
+    auto_cleanup: true               # Automatically clean up old memories
+    cleanup_interval_hours: 24       # Run cleanup every 24 hours

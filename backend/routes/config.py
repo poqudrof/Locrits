@@ -100,17 +100,16 @@ def ollama_models():
 
 @config_bp.route('/api/ollama/status', methods=['GET'])
 def ollama_status():
-    """Récupère le statut du serveur Ollama"""
+    """
+    Récupère le statut du serveur Ollama.
+    NOTE: Cette route est deprecated car chaque Locrit a son propre serveur Ollama.
+    Utilisez /api/locrits/<locrit_name>/ollama/status à la place.
+    """
     try:
-        from src.services.ollama_service import ollama_service
-
-        # Tester la connexion rapidement
-        result = ollama_service.test_connection()
-
         return jsonify({
-            'success': result.get('success', False),
-            'status': 'connected' if result.get('success') else 'disconnected',
-            'models_count': len(result.get('models', [])) if result.get('success') else 0
+            'success': False,
+            'status': 'deprecated',
+            'error': 'Cette route est deprecated. Chaque Locrit a son propre serveur Ollama configuré.'
         })
 
     except Exception as e:
@@ -133,9 +132,11 @@ def test_ollama_connection():
         logger.info(f"URL extraite du formulaire: {test_url}")
 
         if not test_url:
-            # Fallback vers la config uniquement si aucune URL n'est fournie
-            test_url = config_service.get('ollama.base_url', 'http://localhost:11434')
-            logger.info(f"Utilisation de la config par défaut: {test_url}")
+            # No default URL - must be explicitly provided
+            return jsonify({
+                'success': False,
+                'error': 'URL Ollama requise. Chaque Locrit doit avoir son propre serveur Ollama configuré.'
+            }), 400
 
         # Nettoyer l'URL et s'assurer qu'elle se termine correctement
         test_url = test_url.rstrip('/')
@@ -613,6 +614,132 @@ def create_locrit_api():
         return jsonify({
             'success': False,
             'error': 'Erreur lors de la création du Locrit.',
+            'details': str(e)
+        }), 500
+
+
+@config_bp.route('/api/locrits/<locrit_name>/rename', methods=['POST'])
+def rename_locrit_api(locrit_name):
+    """API pour renommer un Locrit"""
+    try:
+        if not request.is_json:
+            return jsonify({
+                'success': False,
+                'error': 'Content-Type doit être application/json'
+            }), 400
+
+        data = request.get_json()
+        logger.info(f"Renommage du Locrit {locrit_name} vers: {data}")
+
+        # Récupérer le nouveau nom
+        new_name = data.get('new_name', '').strip()
+
+        # Validation
+        if not new_name:
+            return jsonify({
+                'success': False,
+                'error': 'Le nouveau nom du Locrit est obligatoire'
+            }), 400
+
+        if new_name == locrit_name:
+            return jsonify({
+                'success': False,
+                'error': 'Le nouveau nom doit être différent de l\'ancien'
+            }), 400
+
+        # Vérifier que le nouveau nom n'existe pas déjà
+        existing_locrits = config_service.list_locrits()
+        if new_name in existing_locrits:
+            return jsonify({
+                'success': False,
+                'error': f'Un Locrit avec le nom "{new_name}" existe déjà'
+            }), 400
+
+        # Récupérer les settings actuels
+        current_settings = config_service.get_locrit_settings(locrit_name)
+        if not current_settings:
+            return jsonify({
+                'success': False,
+                'error': f'Locrit "{locrit_name}" non trouvé'
+            }), 404
+
+        # Créer le nouveau Locrit avec le nouveau nom
+        config_service.update_locrit_settings(new_name, current_settings)
+
+        # Supprimer l'ancien Locrit
+        success = config_service.delete_locrit(locrit_name)
+        if not success:
+            # Rollback: supprimer le nouveau si l'ancien n'a pas pu être supprimé
+            config_service.delete_locrit(new_name)
+            return jsonify({
+                'success': False,
+                'error': 'Erreur lors de la suppression de l\'ancien Locrit'
+            }), 500
+
+        # Sauvegarder la configuration
+        config_saved = config_service.save_config()
+
+        if config_saved:
+            logger.info(f"Locrit renommé via API: {locrit_name} -> {new_name}")
+            return jsonify({
+                'success': True,
+                'message': f'Locrit "{locrit_name}" renommé en "{new_name}" avec succès !',
+                'old_name': locrit_name,
+                'new_name': new_name
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Erreur lors de la sauvegarde de la configuration.'
+            }), 500
+
+    except Exception as e:
+        logger.error(f"Erreur lors du renommage du Locrit {locrit_name}: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': 'Erreur lors du renommage du Locrit.',
+            'details': str(e)
+        }), 500
+
+
+@config_bp.route('/api/locrits/<locrit_name>/toggle', methods=['POST'])
+def toggle_locrit_api(locrit_name):
+    """API pour activer/désactiver un Locrit"""
+    try:
+        settings = config_service.get_locrit_settings(locrit_name)
+        if not settings:
+            return jsonify({
+                'success': False,
+                'error': f'Locrit "{locrit_name}" non trouvé'
+            }), 404
+
+        # Inverser le statut
+        settings['active'] = not settings.get('active', False)
+        settings['updated_at'] = datetime.now().isoformat()
+
+        # Sauvegarder
+        config_service.update_locrit_settings(locrit_name, settings)
+        success = config_service.save_config()
+
+        if success:
+            status = "activé" if settings['active'] else "désactivé"
+            logger.info(f"Locrit {status} via API: {locrit_name}")
+            return jsonify({
+                'success': True,
+                'active': settings['active'],
+                'message': f'Locrit "{locrit_name}" {status} !'
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'error': 'Erreur lors de la sauvegarde de la configuration.'
+            }), 500
+
+    except Exception as e:
+        logger.error(f"Erreur lors du toggle du Locrit {locrit_name}: {str(e)}")
+        return jsonify({
+            'success': False,
+            'error': 'Erreur lors du changement de statut du Locrit.',
             'details': str(e)
         }), 500
 

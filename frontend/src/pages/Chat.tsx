@@ -4,7 +4,12 @@ import { io, Socket } from 'socket.io-client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Send, ArrowLeft } from 'lucide-react'
+import { Send, ArrowLeft, Brain, Trash2, CheckCircle, Plus } from 'lucide-react'
+
+// Generate unique session ID for each conversation
+const generateSessionId = () => {
+  return `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+}
 
 interface Message {
   id: string
@@ -24,6 +29,9 @@ export default function Chat() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
   const assistantMessageIdRef = useRef<string | null>(null)
+  const [memoryActionInProgress, setMemoryActionInProgress] = useState(false)
+  const [memoryActionStatus, setMemoryActionStatus] = useState<string | null>(null)
+  const [sessionId, setSessionId] = useState<string>(() => generateSessionId())
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -71,13 +79,16 @@ export default function Chat() {
 
     socketInstance.on('connect', () => {
       setIsConnected(true)
-      socketInstance.emit('join_chat', { locrit_name: locritName })
+      socketInstance.emit('join_chat', {
+        locrit_name: locritName,
+        session_id: sessionId
+      })
     })
 
     socketInstance.on('disconnect', () => setIsConnected(false))
 
     socketInstance.on('chat_chunk', (data) => {
-      if (data.locrit_name !== locritName) return
+      if (data.locrit_name !== locritName || data.session_id !== sessionId) return
       setMessages(prev => {
         const lastMessage = prev[prev.length - 1]
         if (lastMessage && lastMessage.id === assistantMessageIdRef.current) {
@@ -124,7 +135,7 @@ export default function Chat() {
     return () => {
       socketInstance.disconnect()
     }
-  }, [locritName])
+  }, [locritName, sessionId])
 
   const handleSendMessage = () => {
     if (!inputMessage.trim() || isTyping || !socket) return
@@ -150,6 +161,7 @@ export default function Chat() {
 
     socket.emit('chat_message', {
       locrit_name: locritName,
+      session_id: sessionId,
       message: inputMessage.trim(),
       stream: true
     })
@@ -175,6 +187,105 @@ export default function Chat() {
     const textarea = e.target
     textarea.style.height = 'auto'
     textarea.style.height = Math.min(textarea.scrollHeight, 120) + 'px'
+  }
+
+  const handleRememberConversation = async () => {
+    if (!locritName || memoryActionInProgress) return
+
+    setMemoryActionInProgress(true)
+    setMemoryActionStatus('Saving conversation to memory...')
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/v1/locrits/${locritName}/memory/store-conversation`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          messages: messages.filter(msg => msg.content.trim() !== ''), // Only non-empty messages
+          force_update: true
+        })
+      })
+
+      const result = await response.json()
+
+      if (response.ok && result.success) {
+        setMemoryActionStatus('✅ Conversation saved to memory!')
+        setTimeout(() => setMemoryActionStatus(null), 3000)
+      } else {
+        setMemoryActionStatus(`❌ Failed to save: ${result.error || 'Unknown error'}`)
+        setTimeout(() => setMemoryActionStatus(null), 5000)
+      }
+    } catch (error) {
+      console.error('Error saving conversation:', error)
+      setMemoryActionStatus('❌ Network error occurred')
+      setTimeout(() => setMemoryActionStatus(null), 5000)
+    } finally {
+      setMemoryActionInProgress(false)
+    }
+  }
+
+  const handleNewConversation = () => {
+    // Generate new session ID
+    const newSessionId = generateSessionId()
+    setSessionId(newSessionId)
+
+    // Clear current messages and reset initial greeting
+    if (locrit) {
+      setMessages([
+        {
+          id: '1',
+          type: 'assistant',
+          content: `Bonjour ! Je suis ${locrit.name}. Comment puis-je vous aider aujourd'hui ?`,
+          timestamp: new Date()
+        }
+      ])
+    }
+
+    // Reconnect socket with new session
+    if (socket) {
+      socket.emit('join_chat', {
+        locrit_name: locritName,
+        session_id: newSessionId
+      })
+    }
+  }
+
+  const handleDeleteConversation = async () => {
+    if (!locritName || memoryActionInProgress) return
+
+    const confirmed = window.confirm(
+      'Are you sure you want to delete this conversation? This action cannot be undone.'
+    )
+
+    if (!confirmed) return
+
+    setMemoryActionInProgress(true)
+    setMemoryActionStatus('Deleting conversation...')
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/v1/locrits/${locritName}/memory/sessions/${sessionId}`, {
+        method: 'DELETE'
+      })
+
+      const result = await response.json()
+
+      if (response.ok && result.success) {
+        setMemoryActionStatus('✅ Conversation deleted from memory!')
+        // Start new conversation after deletion
+        handleNewConversation()
+        setTimeout(() => setMemoryActionStatus(null), 3000)
+      } else {
+        setMemoryActionStatus(`❌ Failed to delete: ${result.error || 'Unknown error'}`)
+        setTimeout(() => setMemoryActionStatus(null), 5000)
+      }
+    } catch (error) {
+      console.error('Error deleting conversation:', error)
+      setMemoryActionStatus('❌ Network error occurred')
+      setTimeout(() => setMemoryActionStatus(null), 5000)
+    } finally {
+      setMemoryActionInProgress(false)
+    }
   }
 
   return (
@@ -203,6 +314,42 @@ export default function Chat() {
                 </div>
               </div>
             </div>
+          </div>
+
+          {/* Memory Management Actions */}
+          <div className="flex items-center space-x-2">
+            <Button
+              onClick={handleNewConversation}
+              disabled={memoryActionInProgress}
+              variant="outline"
+              size="sm"
+              className="flex items-center space-x-2"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Nouvelle conversation</span>
+            </Button>
+
+            <Button
+              onClick={handleRememberConversation}
+              disabled={memoryActionInProgress || messages.length <= 1}
+              variant="outline"
+              size="sm"
+              className="flex items-center space-x-2"
+            >
+              <Brain className="h-4 w-4" />
+              <span>Remember this</span>
+            </Button>
+
+            <Button
+              onClick={handleDeleteConversation}
+              disabled={memoryActionInProgress || messages.length <= 1}
+              variant="outline"
+              size="sm"
+              className="flex items-center space-x-2 text-red-600 hover:text-red-700"
+            >
+              <Trash2 className="h-4 w-4" />
+              <span>Delete conversation</span>
+            </Button>
           </div>
         </div>
       )}
@@ -260,6 +407,15 @@ export default function Chat() {
 
         <div ref={messagesEndRef} />
       </div>
+
+      {/* Memory Action Status */}
+      {memoryActionStatus && (
+        <div className="px-4 py-2 border-t border-b bg-muted/50">
+          <div className="flex items-center justify-center">
+            <span className="text-sm font-medium">{memoryActionStatus}</span>
+          </div>
+        </div>
+      )}
 
       {/* Message Input */}
       <div className="p-4 border-t">

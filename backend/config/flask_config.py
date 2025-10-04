@@ -18,8 +18,6 @@ class Config:
     # Configuration CORS pour React frontend
     CORS_ORIGINS = [
         'http://localhost:5173',
-        'http://localhost:5174',
-        'http://localhost:5173',
         'http://localhost:5174'
     ]
 
@@ -33,10 +31,10 @@ class DevelopmentConfig(Config):
     CORS_ORIGINS = [
         'http://localhost:5173',
         'http://localhost:5174',
-        'http://localhost:5173',
-        'http://localhost:5174',
         'http://localhost:3000',  # Common React dev port
-        'http://localhost:3000'
+        'http://localhost:3001',  # Platform app
+        'https://fb73aa2142137f.lhr.life',  # localhost.run tunnel
+        '*'  # Allow all origins in dev for testing
     ]
 
 

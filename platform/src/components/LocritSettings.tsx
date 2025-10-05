@@ -6,7 +6,8 @@ import { Textarea } from "./ui/textarea";
 import { Switch } from "./ui/switch";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "./ui/card";
 import { Separator } from "./ui/separator";
-import { ArrowLeft, Save, Settings, Heart, Sparkles } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "./ui/select";
+import { ArrowLeft, Save, Settings, Heart, Sparkles, Database, FileText, X, Zap, Network } from "lucide-react";
 import { Locrit, LocritSettings } from "../types";
 
 interface LocritSettingsProps {
@@ -57,6 +58,75 @@ export function LocritSettings({ locrit, onSave, onBack }: LocritSettingsProps) 
         }
       }
     }));
+  };
+
+  const updateMemoryService = (value: 'kuzu_graph' | 'plaintext_file' | 'basic_memory' | 'lancedb_langchain' | 'lancedb_mcp' | 'disabled') => {
+    setFormData(prev => ({
+      ...prev,
+      settings: {
+        ...prev.settings,
+        memoryService: value
+      }
+    }));
+  };
+
+  const getMemoryServiceIcon = (type: string) => {
+    switch(type) {
+      case 'kuzu_graph': return <Database className="h-4 w-4" />;
+      case 'plaintext_file': return <FileText className="h-4 w-4" />;
+      case 'basic_memory': return <Sparkles className="h-4 w-4" />;
+      case 'lancedb_langchain': return <Zap className="h-4 w-4" />;
+      case 'lancedb_mcp': return <Network className="h-4 w-4" />;
+      case 'disabled': return <X className="h-4 w-4" />;
+      default: return <Database className="h-4 w-4" />;
+    }
+  };
+
+  const getMemoryServiceInfo = (type: string) => {
+    switch(type) {
+      case 'kuzu_graph':
+        return {
+          name: "Base de données graphe Kuzu",
+          desc: "Mémoire avancée avec relations et recherche sémantique",
+          stability: "⚠️ Expérimental"
+        };
+      case 'plaintext_file':
+        return {
+          name: "Fichiers texte simples",
+          desc: "Stockage stable et facile à lire",
+          stability: "✅ Stable"
+        };
+      case 'basic_memory':
+        return {
+          name: "Basic Memory (MCP)",
+          desc: "Graphe de connaissances Markdown avec recherche sémantique",
+          stability: "⚠️ Expérimental"
+        };
+      case 'lancedb_langchain':
+        return {
+          name: "LanceDB (LangChain)",
+          desc: "Recherche vectorielle rapide avec intégration Python native",
+          stability: "✅ Stable"
+        };
+      case 'lancedb_mcp':
+        return {
+          name: "LanceDB (MCP)",
+          desc: "Recherche vectorielle via protocole MCP standardisé",
+          stability: "⚠️ Expérimental"
+        };
+      case 'disabled':
+        return {
+          name: "Désactivé",
+          desc: "Pas de sauvegarde de mémoire",
+          stability: "✅ Stable"
+        };
+      default:
+        return {
+          name: "Non configuré",
+          desc: "",
+          stability: ""
+        };
+    }
   };
 
   return (
@@ -173,6 +243,77 @@ export function LocritSettings({ locrit, onSave, onBack }: LocritSettingsProps) 
                 onCheckedChange={(checked) => updateOpenTo('publicPlatform', checked)}
               />
             </div>
+          </div>
+        </div>
+
+        <Separator className="border-purple-200" />
+
+        {/* Memory Service Selection */}
+        <div className="space-y-4 bg-gradient-to-br from-amber-50 to-orange-50 p-6 rounded-xl border-2 border-amber-200">
+          <h3 className="font-bold text-amber-800 text-lg">💾 Type de mémoire magique</h3>
+          <div className="space-y-3">
+            <Label htmlFor="memoryService" className="text-amber-700">
+              Choisis comment ton Locrit garde ses souvenirs
+            </Label>
+            <Select
+              value={formData.settings.memoryService || 'plaintext_file'}
+              onValueChange={updateMemoryService}
+            >
+              <SelectTrigger className="border-2 border-amber-200 focus:border-amber-400 bg-white">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="plaintext_file">
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    <span>Fichiers texte (Recommandé)</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="lancedb_langchain">
+                  <div className="flex items-center gap-2">
+                    <Zap className="h-4 w-4" />
+                    <span>LanceDB LangChain (Recherche vectorielle)</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="basic_memory">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4" />
+                    <span>Basic Memory (MCP)</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="lancedb_mcp">
+                  <div className="flex items-center gap-2">
+                    <Network className="h-4 w-4" />
+                    <span>LanceDB MCP (Recherche vectorielle MCP)</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="kuzu_graph">
+                  <div className="flex items-center gap-2">
+                    <Database className="h-4 w-4" />
+                    <span>Base de données Kuzu</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="disabled">
+                  <div className="flex items-center gap-2">
+                    <X className="h-4 w-4" />
+                    <span>Désactivé</span>
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            {formData.settings.memoryService && (
+              <div className="p-3 bg-white/60 rounded-lg text-sm">
+                <p className="font-semibold text-amber-800">
+                  {getMemoryServiceInfo(formData.settings.memoryService).name}
+                </p>
+                <p className="text-amber-600">
+                  {getMemoryServiceInfo(formData.settings.memoryService).desc}
+                </p>
+                <p className="text-xs mt-1">
+                  {getMemoryServiceInfo(formData.settings.memoryService).stability}
+                </p>
+              </div>
+            )}
           </div>
         </div>
 

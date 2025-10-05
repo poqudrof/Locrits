@@ -28,3 +28,9 @@ langchain-core>=0.1.0
 langchain-kuzu>=0.1.0
 kuzu>=0.0.10
 requests-toolbelt==0.10.1
+Faker>=22.0.0
+basic-memory>=0.15.0
+mcp>=1.2.0
+lancedb>=0.6.0
+tantivy>=0.20.0
+mcp-lance-db>=0.1.0

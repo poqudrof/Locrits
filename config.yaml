@@ -25,6 +25,7 @@ locrits:
       llm_info: true
       logs: true
       quick_memory: true
+    memory_service: plaintext_file
     open_to:
       humans: true
       internet: false
@@ -41,6 +42,7 @@ locrits:
       active: true
       created_at: '2025-09-13T14:29:07.098618'
       description: Expert en programmation et technologies
+      memory_service: plaintext_file
       ollama_model: llama3.1:8b-instruct-q3_K_M
       ollama_url: http://localhost:11434
       open_to:
@@ -59,16 +61,17 @@ locrits:
         title: Parlez avec Bob Technique
         welcome_message: Bonjour ! Je suis Bob, un expert technique. Comment puis-je
           vous aider aujourd'hui ?
-      updated_at: '2025-10-04T22:55:46.918406+00:00'
+      updated_at: '2025-10-05T14:29:55.066197+00:00'
     Locrit root:
       access_to:
-        full_memory: false
+        full_memory: true
         llm_info: true
         logs: true
         quick_memory: true
-      active: true
+      active: false
       created_at: '2025-09-14T18:57:16.743340'
       description: Le premire locrit !
+      memory_service: plaintext_file
       ollama_model: llama3.1:8b-instruct-q3_K_M
       ollama_url: http://localhost:11434
       open_to:
@@ -78,7 +81,7 @@ locrits:
         locrits: true
         platform: false
       public_address: ''
-      updated_at: '2025-09-28T20:53:28.917039+00:00'
+      updated_at: '2025-10-05T10:25:55.500933+00:00'
     Marie Recherche:
       access_to:
         full_memory: true
@@ -88,6 +91,7 @@ locrits:
       active: false
       created_at: '2025-09-13T14:29:07.098617'
       description: Spécialisée dans la recherche et l'analyse
+      memory_service: plaintext_file
       ollama_model: llama3.1:8b-instruct-q3_K_M
       ollama_url: http://localhost:11434
       open_to:
@@ -106,6 +110,7 @@ locrits:
       active: true
       created_at: '2025-09-13T14:29:07.098610'
       description: Assistant personnel intelligent et organisé
+      memory_service: plaintext_file
       ollama_model: llama3.1:8b-instruct-q3_K_M
       ollama_url: http://localhost:11434
       open_to:
@@ -124,7 +129,9 @@ logging:
 memory:
   database_path: data/locrit_memory.db
   embedding_model: nomic-embed-text
+  enabled: false
   max_messages: 10000
+  use_kuzu: false
   vector_index_path: data/vector_index.faiss
 network:
   api_server:

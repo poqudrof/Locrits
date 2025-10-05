@@ -15,6 +15,16 @@ api_v1_bp = Blueprint('api_v1', __name__)
 logger = ui_logging_service.logger
 
 
+@api_v1_bp.route('/health', methods=['GET'])
+def health():
+    """Health check endpoint"""
+    return jsonify({
+        'status': 'healthy',
+        'service': 'Locrit API',
+        'timestamp': datetime.now().isoformat()
+    })
+
+
 @api_v1_bp.route('/api/v1/ping', methods=['GET'])
 def api_ping():
     """Endpoint de test pour vérifier que l'API est disponible"""

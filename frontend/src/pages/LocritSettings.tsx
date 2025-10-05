@@ -9,6 +9,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 import { toast } from 'sonner'
 
 const editFormSchema = z.object({
@@ -17,6 +19,7 @@ const editFormSchema = z.object({
   model: z.string().min(1, 'Le modèle est obligatoire'),
   publicAddress: z.string().optional(),
   active: z.boolean(),
+  memoryService: z.enum(['kuzu_graph', 'plaintext_file', 'basic_memory', 'lancedb_langchain', 'lancedb_mcp', 'disabled']).optional(),
   // Open to permissions
   humans: z.boolean(),
   locrits: z.boolean(),
@@ -40,6 +43,8 @@ export default function LocritSettings() {
   const [memoryData, setMemoryData] = useState<any>(null)
   const [isLoadingMemory, setIsLoadingMemory] = useState(false)
   const [activeTab, setActiveTab] = useState('overview')
+  const [selectedMemoryService, setSelectedMemoryService] = useState<string>('')
+  const [showMemoryWarning, setShowMemoryWarning] = useState(false)
 
   const {
     register,
@@ -63,12 +68,15 @@ export default function LocritSettings() {
           if (locrit) {
             setLocritData(locrit)
             // Reset form with current values
+            const memService = locrit.memory_service || 'plaintext_file'
+            setSelectedMemoryService(memService)
             reset({
               name: locritName,
               description: locrit.description || '',
               model: locrit.ollama_model || '',
               publicAddress: locrit.public_address || '',
               active: locrit.active || false,
+              memoryService: memService,
               humans: locrit.open_to?.humans || true,
               locrits: locrit.open_to?.locrits || true,
               invitations: locrit.open_to?.invitations || true,
@@ -154,6 +162,7 @@ export default function LocritSettings() {
             full_memory: data.fullMemory,
             llm_info: data.llmInfo,
           },
+          memory_service: data.memoryService,
         })
       })
 
@@ -455,6 +464,41 @@ export default function LocritSettings() {
                       id="edit-publicAddress"
                       {...register('publicAddress')}
                     />
+                  </div>
+
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="edit-memoryService">💾 Type de mémoire</Label>
+                    <Select
+                      value={selectedMemoryService}
+                      onValueChange={(value) => {
+                        if (value !== selectedMemoryService) {
+                          setShowMemoryWarning(true)
+                        }
+                        setSelectedMemoryService(value)
+                      }}
+                    >
+                      <SelectTrigger id="edit-memoryService">
+                        <SelectValue placeholder="Choisir un type de mémoire" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="plaintext_file">📄 Fichiers texte (Recommandé)</SelectItem>
+                        <SelectItem value="lancedb_langchain">⚡ LanceDB LangChain</SelectItem>
+                        <SelectItem value="basic_memory">✨ Basic Memory (MCP)</SelectItem>
+                        <SelectItem value="lancedb_mcp">🔌 LanceDB MCP</SelectItem>
+                        <SelectItem value="kuzu_graph">🗄️ Base de données Kuzu</SelectItem>
+                        <SelectItem value="disabled">❌ Désactivé</SelectItem>
+                      </SelectContent>
+                    </Select>
+
+                    {showMemoryWarning && selectedMemoryService !== locritData?.memory_service && (
+                      <Alert className="border-orange-500 bg-orange-50 dark:bg-orange-950/20">
+                        <AlertDescription className="text-orange-800 dark:text-orange-200">
+                          ⚠️ <strong>Attention :</strong> Changer le type de mémoire rendra les anciennes mémoires inaccessibles.
+                          Les données ne seront pas supprimées mais ne seront plus utilisées par ce type de mémoire.
+                          Cette action est réversible en revenant à l'ancien type de mémoire.
+                        </AlertDescription>
+                      </Alert>
+                    )}
                   </div>
                 </div>
 

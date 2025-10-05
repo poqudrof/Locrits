@@ -192,13 +192,17 @@ class ChatNamespace(Namespace):
 
             # Save user message to memory
             try:
-                asyncio.run(memory_manager.save_message(
+                # Use asyncio.create_task in sync context
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                loop.run_until_complete(memory_manager.save_message(
                     locrit_name=locrit_name,
                     role="user",
                     content=message,
                     session_id=session_id,
                     user_id=user_id
                 ))
+                loop.close()
             except Exception as e:
                 logger.warning(f"Error saving user message to memory: {e}")
 
@@ -211,11 +215,14 @@ class ChatNamespace(Namespace):
             conversation_history = []
             try:
                 # Get last 20 messages for context
-                history_messages = asyncio.run(memory_manager.get_conversation_history(
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+                history_messages = loop.run_until_complete(memory_manager.get_conversation_history(
                     locrit_name=locrit_name,
                     session_id=session_id,
                     limit=20
                 ))
+                loop.close()
 
                 # Convert to Ollama format
                 for msg in history_messages:
@@ -267,13 +274,16 @@ class ChatNamespace(Namespace):
 
                     # Save assistant response to memory
                     try:
-                        asyncio.run(memory_manager.save_message(
+                        loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(loop)
+                        loop.run_until_complete(memory_manager.save_message(
                             locrit_name=locrit_name,
                             role="assistant",
                             content=full_response,
                             session_id=session_id,
                             user_id=user_id
                         ))
+                        loop.close()
                     except Exception as e:
                         logger.warning(f"Error saving assistant response to memory: {e}")
 
@@ -291,13 +301,16 @@ class ChatNamespace(Namespace):
 
                     # Save assistant response to memory
                     try:
-                        asyncio.run(memory_manager.save_message(
+                        loop = asyncio.new_event_loop()
+                        asyncio.set_event_loop(loop)
+                        loop.run_until_complete(memory_manager.save_message(
                             locrit_name=locrit_name,
                             role="assistant",
                             content=full_response,
                             session_id=session_id,
                             user_id=user_id
                         ))
+                        loop.close()
                     except Exception as e:
                         logger.warning(f"Error saving assistant response to memory: {e}")
 

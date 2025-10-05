@@ -32,6 +32,16 @@ export interface LocritSettings {
     fullMemory: boolean;
     llmInfo: boolean;
   };
+  memoryService?: 'kuzu_graph' | 'plaintext_file' | 'basic_memory' | 'lancedb_langchain' | 'lancedb_mcp' | 'disabled';
+}
+
+export interface MemoryServiceInfo {
+  type: 'kuzu_graph' | 'plaintext_file' | 'basic_memory' | 'lancedb_langchain' | 'lancedb_mcp' | 'disabled';
+  name: string;
+  description: string;
+  pros: string;
+  cons: string;
+  stability: 'stable' | 'experimental';
 }
 
 export interface ChatMessage {

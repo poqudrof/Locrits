@@ -1,13 +1,14 @@
 """
-Memory Manager Service - Manages per-Locrit Kuzu memory instances.
+Memory Manager Service - Manages per-Locrit memory instances.
 This service handles the creation and routing of memory requests to individual Locrit databases.
 """
 
 import asyncio
-from typing import Dict, Optional, Any, List
-from .kuzu_memory_service import KuzuMemoryService
+from typing import Dict, Optional, Any, List, Union
 from .config_service import config_service
 from .comprehensive_logging_service import comprehensive_logger, LogLevel, LogCategory
+from .kuzu_memory_service import KuzuMemoryService
+from .simple_file_memory_service import SimpleFileMemoryService
 
 
 class MemoryManagerService:
@@ -21,7 +22,7 @@ class MemoryManagerService:
             base_path: Base directory for memory databases
         """
         self.base_path = base_path
-        self.memory_services: Dict[str, KuzuMemoryService] = {}
+        self.memory_services: Dict[str, Union[KuzuMemoryService, SimpleFileMemoryService]] = {}
         self.is_initialized = False
         self._initialization_locks: Dict[str, asyncio.Lock] = {}
         self._global_lock = asyncio.Lock()
@@ -40,7 +41,7 @@ class MemoryManagerService:
             print(f"Error initializing memory manager: {e}")
             return False
 
-    async def get_memory_service(self, locrit_name: str) -> Optional[KuzuMemoryService]:
+    async def get_memory_service(self, locrit_name: str) -> Optional[Union[KuzuMemoryService, SimpleFileMemoryService]]:
         """
         Get or create a memory service for a specific Locrit.
         Thread-safe: prevents multiple threads from initializing the same database.
@@ -49,7 +50,7 @@ class MemoryManagerService:
             locrit_name: Name of the Locrit
 
         Returns:
-            KuzuMemoryService instance or None if error
+            Memory service instance or None if error
         """
         if not self.is_initialized:
             await self.initialize()
@@ -77,10 +78,23 @@ class MemoryManagerService:
                 return None
 
             try:
-                # Create new memory service for this Locrit
-                memory_service = KuzuMemoryService(locrit_name, self.base_path)
+                # Get the memory service type from config
+                memory_service_type = locrit_settings.get('memory_service', 'plaintext_file')
 
-                # Initialize the service (this is where the segfault occurs without locking)
+                # Create the appropriate memory service
+                if memory_service_type == 'kuzu_graph':
+                    memory_service = KuzuMemoryService(locrit_name, self.base_path)
+                elif memory_service_type == 'plaintext_file':
+                    memory_service = SimpleFileMemoryService(locrit_name, self.base_path)
+                elif memory_service_type == 'disabled':
+                    print(f"Memory service is disabled for {locrit_name}")
+                    return None
+                else:
+                    print(f"❌ Unknown memory service type: {memory_service_type}")
+                    # Default to simple file memory
+                    memory_service = SimpleFileMemoryService(locrit_name, self.base_path)
+
+                # Initialize the service
                 success = await memory_service.initialize()
                 if not success:
                     print(f"Failed to initialize memory service for {locrit_name}")
@@ -88,7 +102,7 @@ class MemoryManagerService:
 
                 # Store and return the service
                 self.memory_services[locrit_name] = memory_service
-                print(f"✅ Created memory service for Locrit: {locrit_name}")
+                print(f"✅ Created {memory_service_type} memory service for Locrit: {locrit_name}")
                 return memory_service
 
             except Exception as e:

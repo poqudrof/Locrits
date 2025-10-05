@@ -169,13 +169,13 @@ async def api_chat_with_locrit(locrit_name):
 
         try:
             # Sauvegarder le message utilisateur
-            asyncio.run(memory_manager.save_message(
+            await memory_manager.save_message(
                 locrit_name=locrit_name,
                 role="user",
                 content=message,
                 session_id=session_id,
                 user_id=user_id
-            ))
+            )
         except Exception as e:
             logger.warning(f"Erreur sauvegarde message utilisateur: {e}")
 
@@ -183,15 +183,15 @@ async def api_chat_with_locrit(locrit_name):
         system_prompt = f"Tu es {locrit_name}, un Locrit. {settings.get('description', '')}"
 
         try:
-            # Récupérer l'historique de conversation depuis la mémoire Kuzu
+            # Récupérer l'historique de conversation depuis la mémoire
             conversation_history = []
             try:
                 # Récupérer les derniers messages de cette session (limite à 20 pour éviter de surcharger le contexte)
-                history_messages = asyncio.run(memory_manager.get_conversation_history(
+                history_messages = await memory_manager.get_conversation_history(
                     locrit_name=locrit_name,
                     session_id=session_id,
                     limit=20
-                ))
+                )
 
                 # Convertir l'historique en messages LangChain
                 for msg in history_messages:
@@ -213,13 +213,13 @@ async def api_chat_with_locrit(locrit_name):
 
             # Sauvegarder la réponse dans la mémoire du Locrit
             try:
-                asyncio.run(memory_manager.save_message(
+                await memory_manager.save_message(
                     locrit_name=locrit_name,
                     role="assistant",
                     content=response,
                     session_id=session_id,
                     user_id=user_id
-                ))
+                )
             except Exception as e:
                 logger.warning(f"Erreur sauvegarde réponse: {e}")
 

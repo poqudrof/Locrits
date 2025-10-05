@@ -17,6 +17,39 @@
         "shadcn@latest",
         "mcp"
       ]
+    },
+    "basic-memory": {
+      "command": "uvx",
+      "args": [
+        "basic-memory"
+      ],
+      "env": {
+        "BASIC_MEMORY_PATH": "data/memory/basic-memory"
+      },
+      "alwaysAllow": [
+        "write_note",
+        "read_note",
+        "search",
+        "build_context"
+      ]
+    },
+    "lancedb": {
+      "command": "uvx",
+      "args": [
+        "mcp-lance-db"
+      ],
+      "env": {
+        "LANCEDB_URI": "data/memory/lancedb_mcp"
+      },
+      "alwaysAllow": [
+        "create_table",
+        "add_vector",
+        "search_vectors",
+        "query_by_metadata",
+        "delete_by_metadata",
+        "get_table_stats",
+        "embed_text"
+      ]
     }
   }
 }

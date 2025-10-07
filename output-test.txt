@@ -1,0 +1,497 @@
+
+[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[0;34m🚀 LOCRITS TEST SUITE[0m
+[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+
+[0;34mℹ️  Starting comprehensive test suite...[0m
+[0;34mℹ️  Working directory: /mnt/storage/repos/Locrits[0m
+[0;34mℹ️  Activating virtual environment...[0m
+
+[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[0;34m🐍 BACKEND TESTS[0m
+[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+
+[0;34mℹ️  Checking Python version...[0m
+Python 3.13.7
+[0;34mℹ️  Installing backend dependencies...[0m
+[1;33m⚠️  No backend unit tests found (tests/test_backend.py)[0m
+[1;33mRunning: Backend imports[0m
+⚠️  MCP not available - BasicMemoryAdapter will not work
+✓ Memory factory import successful
+[0;32m✅ Backend imports passed[0m
+[1;33mRunning: Config loading[0m
+[0;31m❌ Config loading failed[0m
+[0;34mℹ️  Checking Python syntax...[0m
+[0;32m✅ Python syntax check passed[0m
+
+[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[0;34m⚛️  FRONTEND TESTS[0m
+[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+
+[1;33mRunning: TypeScript type check[0m
+[0;32m✅ TypeScript type check passed[0m
+[1;33mRunning: ESLint check[0m
+
+> frontend@0.0.0 lint
+> eslint .
+
+[0;31m❌ ESLint check failed[0m
+[1;33mRunning: Frontend build[0m
+
+> frontend@0.0.0 build
+> tsc -b && vite build
+
+src/pages/MemoryExplorer.tsx(952,51): error TS2345: Argument of type 'RelatedConcept' is not assignable to parameter of type 'string'.
+src/pages/MemoryExplorer.tsx(954,25): error TS2322: Type 'RelatedConcept' is not assignable to type 'ReactNode'.
+  Type 'RelatedConcept' is missing the following properties from type 'ReactPortal': children, props, key
+../ui/shared/accordion.tsx(3,24): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+../ui/shared/accordion.tsx(4,37): error TS2307: Cannot find module '@radix-ui/react-accordion@1.2.3' or its corresponding type declarations.
+../ui/shared/accordion.tsx(5,33): error TS2307: Cannot find module 'lucide-react@0.487.0' or its corresponding type declarations.
+../ui/shared/accordion.tsx(12,10): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+../ui/shared/accordion.tsx(61,7): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/accordion.tsx(61,61): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/alert-dialog.tsx(3,24): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+../ui/shared/alert-dialog.tsx(4,39): error TS2307: Cannot find module '@radix-ui/react-alert-dialog@1.1.6' or its corresponding type declarations.
+../ui/shared/alert-dialog.tsx(12,10): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+../ui/shared/alert-dialog.tsx(71,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/alert-dialog.tsx(84,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/alert.tsx(1,24): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+../ui/shared/alert.tsx(2,40): error TS2307: Cannot find module 'class-variance-authority@0.7.1' or its corresponding type declarations.
+../ui/shared/alert.tsx(28,5): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+../ui/shared/alert.tsx(28,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/alert.tsx(39,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/alert.tsx(55,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/aspect-ratio.tsx(3,39): error TS2307: Cannot find module '@radix-ui/react-aspect-ratio@1.1.2' or its corresponding type declarations.
+../ui/shared/aspect-ratio.tsx(8,10): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+../ui/shared/avatar.tsx(3,24): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+../ui/shared/avatar.tsx(4,34): error TS2307: Cannot find module '@radix-ui/react-avatar@1.1.3' or its corresponding type declarations.
+../ui/shared/avatar.tsx(13,5): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+../ui/shared/badge.tsx(1,24): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+../ui/shared/badge.tsx(2,22): error TS2307: Cannot find module '@radix-ui/react-slot@1.1.2' or its corresponding type declarations.
+../ui/shared/badge.tsx(3,40): error TS2307: Cannot find module 'class-variance-authority@0.7.1' or its corresponding type declarations.
+../ui/shared/badge.tsx(38,5): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+../ui/shared/breadcrumb.tsx(1,24): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+../ui/shared/breadcrumb.tsx(2,22): error TS2307: Cannot find module '@radix-ui/react-slot@1.1.2' or its corresponding type declarations.
+../ui/shared/breadcrumb.tsx(3,46): error TS2307: Cannot find module 'lucide-react@0.487.0' or its corresponding type declarations.
+../ui/shared/breadcrumb.tsx(8,10): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+../ui/shared/breadcrumb.tsx(8,10): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/breadcrumb.tsx(13,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/breadcrumb.tsx(26,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/breadcrumb.tsx(54,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/breadcrumb.tsx(71,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/breadcrumb.tsx(79,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/breadcrumb.tsx(88,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/breadcrumb.tsx(96,7): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/breadcrumb.tsx(96,37): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/breadcrumb.tsx(97,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/button.tsx(1,24): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+../ui/shared/button.tsx(2,22): error TS2307: Cannot find module '@radix-ui/react-slot@1.1.2' or its corresponding type declarations.
+../ui/shared/button.tsx(3,40): error TS2307: Cannot find module 'class-variance-authority@0.7.1' or its corresponding type declarations.
+../ui/shared/button.tsx(50,5): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+../ui/shared/calendar.tsx(3,24): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+../ui/shared/calendar.tsx(4,43): error TS2307: Cannot find module 'lucide-react@0.487.0' or its corresponding type declarations.
+../ui/shared/calendar.tsx(5,27): error TS2307: Cannot find module 'react-day-picker@8.10.1' or its corresponding type declarations.
+../ui/shared/calendar.tsx(17,5): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+../ui/shared/calendar.tsx(63,22): error TS7031: Binding element 'className' implicitly has an 'any' type.
+../ui/shared/calendar.tsx(66,23): error TS7031: Binding element 'className' implicitly has an 'any' type.
+../ui/shared/card.tsx(1,24): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+../ui/shared/card.tsx(7,5): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+../ui/shared/card.tsx(7,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/card.tsx(20,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/card.tsx(33,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/card.tsx(43,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/card.tsx(53,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/card.tsx(66,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/card.tsx(76,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/carousel.tsx(3,24): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+../ui/shared/carousel.tsx(6,8): error TS2307: Cannot find module 'embla-carousel-react@8.6.0' or its corresponding type declarations.
+../ui/shared/carousel.tsx(7,39): error TS2307: Cannot find module 'lucide-react@0.487.0' or its corresponding type declarations.
+../ui/shared/carousel.tsx(108,5): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+../ui/shared/carousel.tsx(121,7): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/carousel.tsx(130,7): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/carousel.tsx(139,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/carousel.tsx(144,7): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/carousel.tsx(152,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/carousel.tsx(160,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/carousel.tsx(199,7): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/carousel.tsx(199,47): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/carousel.tsx(229,7): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/carousel.tsx(229,43): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/chart.tsx(3,24): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+../ui/shared/chart.tsx(4,36): error TS2307: Cannot find module 'recharts@2.15.2' or its corresponding type declarations.
+../ui/shared/chart.tsx(53,5): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+../ui/shared/chart.tsx(54,7): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/chart.tsx(67,7): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/chart.tsx(82,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/chart.tsx(146,9): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/chart.tsx(148,9): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/chart.tsx(156,12): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/chart.tsx(156,70): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/chart.tsx(174,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/chart.tsx(181,7): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/chart.tsx(182,23): error TS7006: Parameter 'item' implicitly has an 'any' type.
+../ui/shared/chart.tsx(182,29): error TS7006: Parameter 'index' implicitly has an 'any' type.
+../ui/shared/chart.tsx(188,13): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/chart.tsx(203,23): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/chart.tsx(223,19): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/chart.tsx(229,21): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/chart.tsx(231,23): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/chart.tsx(233,23): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/chart.tsx(234,21): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/chart.tsx(236,23): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/chart.tsx(238,23): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/chart.tsx(240,19): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/chart.tsx(243,13): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/chart.tsx(246,7): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/chart.tsx(247,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/chart.tsx(271,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/chart.tsx(278,21): error TS7006: Parameter 'item' implicitly has an 'any' type.
+../ui/shared/chart.tsx(283,11): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/chart.tsx(292,15): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/chart.tsx(300,11): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/chart.tsx(303,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/checkbox.tsx(3,24): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+../ui/shared/checkbox.tsx(4,36): error TS2307: Cannot find module '@radix-ui/react-checkbox@1.1.4' or its corresponding type declarations.
+../ui/shared/checkbox.tsx(5,27): error TS2307: Cannot find module 'lucide-react@0.487.0' or its corresponding type declarations.
+../ui/shared/checkbox.tsx(14,5): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+../ui/shared/collapsible.tsx(3,39): error TS2307: Cannot find module '@radix-ui/react-collapsible@1.1.3' or its corresponding type declarations.
+../ui/shared/collapsible.tsx(8,10): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+../ui/shared/command.tsx(3,24): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+../ui/shared/command.tsx(4,45): error TS2307: Cannot find module 'cmdk@1.1.1' or its corresponding type declarations.
+../ui/shared/command.tsx(5,28): error TS2307: Cannot find module 'lucide-react@0.487.0' or its corresponding type declarations.
+../ui/shared/command.tsx(21,5): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+../ui/shared/command.tsx(61,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/command.tsx(74,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/command.tsx(156,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/context-menu.tsx(3,24): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+../ui/shared/context-menu.tsx(4,39): error TS2307: Cannot find module '@radix-ui/react-context-menu@2.2.6' or its corresponding type declarations.
+../ui/shared/context-menu.tsx(5,57): error TS2307: Cannot find module 'lucide-react@0.487.0' or its corresponding type declarations.
+../ui/shared/context-menu.tsx(12,10): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+../ui/shared/context-menu.tsx(153,7): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/context-menu.tsx(157,7): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/context-menu.tsx(177,7): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/context-menu.tsx(181,7): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/context-menu.tsx(225,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/dialog.tsx(3,24): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+../ui/shared/dialog.tsx(4,34): error TS2307: Cannot find module '@radix-ui/react-dialog@1.1.6' or its corresponding type declarations.
+../ui/shared/dialog.tsx(5,23): error TS2307: Cannot find module 'lucide-react@0.487.0' or its corresponding type declarations.
+../ui/shared/dialog.tsx(12,10): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+../ui/shared/dialog.tsx(68,11): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/dialog.tsx(68,42): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/dialog.tsx(77,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/dialog.tsx(87,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/drawer.tsx(3,24): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+../ui/shared/drawer.tsx(4,43): error TS2307: Cannot find module 'vaul@1.1.2' or its corresponding type declarations.
+../ui/shared/drawer.tsx(11,10): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+../ui/shared/drawer.tsx(68,9): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/drawer.tsx(77,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/drawer.tsx(87,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/dropdown-menu.tsx(3,24): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+../ui/shared/dropdown-menu.tsx(4,40): error TS2307: Cannot find module '@radix-ui/react-dropdown-menu@2.1.6' or its corresponding type declarations.
+../ui/shared/dropdown-menu.tsx(5,57): error TS2307: Cannot find module 'lucide-react@0.487.0' or its corresponding type declarations.
+../ui/shared/dropdown-menu.tsx(12,10): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+../ui/shared/dropdown-menu.tsx(101,7): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/dropdown-menu.tsx(105,7): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/dropdown-menu.tsx(136,7): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/dropdown-menu.tsx(140,7): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/dropdown-menu.tsx(184,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/form.tsx(3,24): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+../ui/shared/form.tsx(4,33): error TS2307: Cannot find module '@radix-ui/react-label@2.1.2' or its corresponding type declarations.
+../ui/shared/form.tsx(5,22): error TS2307: Cannot find module '@radix-ui/react-slot@1.1.2' or its corresponding type declarations.
+../ui/shared/form.tsx(14,8): error TS2307: Cannot find module 'react-hook-form@7.55.0' or its corresponding type declarations.
+../ui/shared/form.tsx(80,5): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+../ui/shared/form.tsx(81,7): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/form.tsx(130,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/form.tsx(148,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/form.tsx(155,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/hover-card.tsx(3,24): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+../ui/shared/hover-card.tsx(4,37): error TS2307: Cannot find module '@radix-ui/react-hover-card@1.1.6' or its corresponding type declarations.
+../ui/shared/hover-card.tsx(11,10): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+../ui/shared/input-otp.tsx(3,24): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+../ui/shared/input-otp.tsx(4,43): error TS2307: Cannot find module 'input-otp@1.4.2' or its corresponding type declarations.
+../ui/shared/input-otp.tsx(5,27): error TS2307: Cannot find module 'lucide-react@0.487.0' or its corresponding type declarations.
+../ui/shared/input-otp.tsx(17,5): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+../ui/shared/input-otp.tsx(31,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/input-otp.tsx(50,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/input-otp.tsx(61,9): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/input-otp.tsx(62,11): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/input-otp.tsx(63,9): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/input-otp.tsx(65,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/input-otp.tsx(71,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/input-otp.tsx(73,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/input.tsx(1,24): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+../ui/shared/input.tsx(7,5): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+../ui/shared/input.tsx(7,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/label.tsx(3,24): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+../ui/shared/label.tsx(4,33): error TS2307: Cannot find module '@radix-ui/react-label@2.1.2' or its corresponding type declarations.
+../ui/shared/label.tsx(13,5): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+../ui/shared/menubar.tsx(3,24): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+../ui/shared/menubar.tsx(4,35): error TS2307: Cannot find module '@radix-ui/react-menubar@1.1.6' or its corresponding type declarations.
+../ui/shared/menubar.tsx(5,57): error TS2307: Cannot find module 'lucide-react@0.487.0' or its corresponding type declarations.
+../ui/shared/menubar.tsx(14,5): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+../ui/shared/menubar.tsx(130,7): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/menubar.tsx(134,7): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/menubar.tsx(154,7): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/menubar.tsx(158,7): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/menubar.tsx(202,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/navigation-menu.tsx(1,24): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+../ui/shared/navigation-menu.tsx(2,42): error TS2307: Cannot find module '@radix-ui/react-navigation-menu@1.2.5' or its corresponding type declarations.
+../ui/shared/navigation-menu.tsx(3,21): error TS2307: Cannot find module 'class-variance-authority@0.7.1' or its corresponding type declarations.
+../ui/shared/navigation-menu.tsx(4,33): error TS2307: Cannot find module 'lucide-react@0.487.0' or its corresponding type declarations.
+../ui/shared/navigation-menu.tsx(17,5): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+../ui/shared/navigation-menu.tsx(107,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/navigation-menu.tsx(120,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/navigation-menu.tsx(153,7): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/pagination.tsx(1,24): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+../ui/shared/pagination.tsx(6,8): error TS2307: Cannot find module 'lucide-react@0.487.0' or its corresponding type declarations.
+../ui/shared/pagination.tsx(13,5): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+../ui/shared/pagination.tsx(13,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/pagination.tsx(28,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/pagination.tsx(37,10): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/pagination.tsx(52,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/pagination.tsx(80,7): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/pagination.tsx(80,49): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/pagination.tsx(96,7): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/pagination.tsx(96,45): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/pagination.tsx(107,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/pagination.tsx(114,7): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/pagination.tsx(114,43): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/pagination.tsx(115,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/popover.tsx(3,24): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+../ui/shared/popover.tsx(4,35): error TS2307: Cannot find module '@radix-ui/react-popover@1.1.6' or its corresponding type declarations.
+../ui/shared/popover.tsx(11,10): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+../ui/shared/progress.tsx(3,24): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+../ui/shared/progress.tsx(4,36): error TS2307: Cannot find module '@radix-ui/react-progress@1.1.2' or its corresponding type declarations.
+../ui/shared/progress.tsx(14,5): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+../ui/shared/radio-group.tsx(3,24): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+../ui/shared/radio-group.tsx(4,38): error TS2307: Cannot find module '@radix-ui/react-radio-group@1.2.3' or its corresponding type declarations.
+../ui/shared/radio-group.tsx(5,28): error TS2307: Cannot find module 'lucide-react@0.487.0' or its corresponding type declarations.
+../ui/shared/radio-group.tsx(14,5): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+../ui/shared/resizable.tsx(3,24): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+../ui/shared/resizable.tsx(4,34): error TS2307: Cannot find module 'lucide-react@0.487.0' or its corresponding type declarations.
+../ui/shared/resizable.tsx(5,37): error TS2307: Cannot find module 'react-resizable-panels@2.1.7' or its corresponding type declarations.
+../ui/shared/resizable.tsx(14,5): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+../ui/shared/resizable.tsx(48,9): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/resizable.tsx(50,9): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/scroll-area.tsx(3,24): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+../ui/shared/scroll-area.tsx(4,38): error TS2307: Cannot find module '@radix-ui/react-scroll-area@1.2.3' or its corresponding type declarations.
+../ui/shared/scroll-area.tsx(14,5): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+../ui/shared/select.tsx(3,24): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+../ui/shared/select.tsx(4,34): error TS2307: Cannot find module '@radix-ui/react-select@2.1.6' or its corresponding type declarations.
+../ui/shared/select.tsx(9,8): error TS2307: Cannot find module 'lucide-react@0.487.0' or its corresponding type declarations.
+../ui/shared/select.tsx(16,10): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+../ui/shared/select.tsx(119,7): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/select.tsx(123,7): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/separator.tsx(3,24): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+../ui/shared/separator.tsx(4,37): error TS2307: Cannot find module '@radix-ui/react-separator@1.1.2' or its corresponding type declarations.
+../ui/shared/separator.tsx(15,5): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+../ui/shared/sheet.tsx(3,24): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+../ui/shared/sheet.tsx(4,33): error TS2307: Cannot find module '@radix-ui/react-dialog@1.1.6' or its corresponding type declarations.
+../ui/shared/sheet.tsx(5,23): error TS2307: Cannot find module 'lucide-react@0.487.0' or its corresponding type declarations.
+../ui/shared/sheet.tsx(10,10): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+../ui/shared/sheet.tsx(77,11): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/sheet.tsx(77,42): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/sheet.tsx(86,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/sheet.tsx(96,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/sidebar.tsx(3,24): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+../ui/shared/sidebar.tsx(4,22): error TS2307: Cannot find module '@radix-ui/react-slot@1.1.2' or its corresponding type declarations.
+../ui/shared/sidebar.tsx(5,35): error TS2307: Cannot find module 'class-variance-authority@0.7.1' or its corresponding type declarations.
+../ui/shared/sidebar.tsx(6,31): error TS2307: Cannot find module 'lucide-react@0.487.0' or its corresponding type declarations.
+../ui/shared/sidebar.tsx(93,38): error TS7006: Parameter 'open' implicitly has an 'any' type.
+../ui/shared/sidebar.tsx(93,65): error TS7006: Parameter 'open' implicitly has an 'any' type.
+../ui/shared/sidebar.tsx(130,5): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+../ui/shared/sidebar.tsx(132,9): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/sidebar.tsx(148,9): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/sidebar.tsx(170,7): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/sidebar.tsx(179,7): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/sidebar.tsx(202,11): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/sidebar.tsx(202,66): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/sidebar.tsx(209,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/sidebar.tsx(218,7): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/sidebar.tsx(229,7): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/sidebar.tsx(244,9): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/sidebar.tsx(250,9): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/sidebar.tsx(251,7): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/sidebar.tsx(252,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/sidebar.tsx(270,17): error TS7006: Parameter 'event' implicitly has an 'any' type.
+../ui/shared/sidebar.tsx(277,7): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/sidebar.tsx(277,47): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/sidebar.tsx(286,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/sidebar.tsx(309,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/sidebar.tsx(337,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/sidebar.tsx(348,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/sidebar.tsx(373,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/sidebar.tsx(387,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/sidebar.tsx(445,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/sidebar.tsx(456,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/sidebar.tsx(467,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/sidebar.tsx(585,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/sidebar.tsx(615,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/sidebar.tsx(636,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/sidebar.tsx(642,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/sidebar.tsx(660,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/skeleton.tsx(5,5): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+../ui/shared/slider.tsx(3,24): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+../ui/shared/slider.tsx(4,34): error TS2307: Cannot find module '@radix-ui/react-slider' or its corresponding type declarations.
+../ui/shared/slider.tsx(27,5): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+../ui/shared/sonner.tsx(3,26): error TS2307: Cannot find module 'next-themes@0.4.6' or its corresponding type declarations.
+../ui/shared/sonner.tsx(4,49): error TS2307: Cannot find module 'sonner@2.0.3' or its corresponding type declarations.
+../ui/shared/sonner.tsx(10,5): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+../ui/shared/switch.tsx(3,24): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+../ui/shared/switch.tsx(4,34): error TS2307: Cannot find module '@radix-ui/react-switch@1.1.3' or its corresponding type declarations.
+../ui/shared/switch.tsx(13,5): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+../ui/shared/table.tsx(3,24): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+../ui/shared/table.tsx(9,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/table.tsx(9,5): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+../ui/shared/table.tsx(13,7): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/table.tsx(18,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/table.tsx(24,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/table.tsx(34,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/table.tsx(44,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/table.tsx(57,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/table.tsx(70,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/table.tsx(83,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/table.tsx(99,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/tabs.tsx(3,24): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+../ui/shared/tabs.tsx(4,32): error TS2307: Cannot find module '@radix-ui/react-tabs@1.1.3' or its corresponding type declarations.
+../ui/shared/tabs.tsx(13,5): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+../ui/shared/textarea.tsx(1,24): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+../ui/shared/textarea.tsx(7,5): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+../ui/shared/textarea.tsx(7,5): error TS7026: JSX element implicitly has type 'any' because no interface 'JSX.IntrinsicElements' exists.
+../ui/shared/toggle-group.tsx(3,24): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+../ui/shared/toggle-group.tsx(4,39): error TS2307: Cannot find module '@radix-ui/react-toggle-group@1.1.2' or its corresponding type declarations.
+../ui/shared/toggle-group.tsx(5,35): error TS2307: Cannot find module 'class-variance-authority@0.7.1' or its corresponding type declarations.
+../ui/shared/toggle-group.tsx(26,5): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+../ui/shared/toggle.tsx(3,24): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+../ui/shared/toggle.tsx(4,34): error TS2307: Cannot find module '@radix-ui/react-toggle@1.1.2' or its corresponding type declarations.
+../ui/shared/toggle.tsx(5,40): error TS2307: Cannot find module 'class-variance-authority@0.7.1' or its corresponding type declarations.
+../ui/shared/toggle.tsx(39,5): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+../ui/shared/tooltip.tsx(3,24): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+../ui/shared/tooltip.tsx(4,35): error TS2307: Cannot find module '@radix-ui/react-tooltip@1.1.8' or its corresponding type declarations.
+../ui/shared/tooltip.tsx(13,5): error TS2875: This JSX tag requires the module path 'react/jsx-runtime' to exist, but none could be found. Make sure you have types for the appropriate package installed.
+../ui/shared/use-mobile.ts(1,24): error TS2307: Cannot find module 'react' or its corresponding type declarations.
+../ui/shared/utils.ts(1,39): error TS2307: Cannot find module 'clsx' or its corresponding type declarations.
+../ui/shared/utils.ts(2,25): error TS2307: Cannot find module 'tailwind-merge' or its corresponding type declarations.
+[0;31m❌ Frontend build failed[0m
+[1;33m⚠️  No frontend test script found[0m
+
+[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[0;34m🧠 MEMORY SERVICE TESTS[0m
+[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+
+[1;33mRunning: Plaintext memory service[0m
+⚠️  MCP not available - BasicMemoryAdapter will not work
+📄 Creating plaintext file memory service for TestBot
+📄 Plain text memory service initialized for TestBot
+✓ Plaintext service initialized
+[0;32m✅ Plaintext memory service passed[0m
+[1;33mRunning: LanceDB LangChain service[0m
+⚠️  MCP not available - BasicMemoryAdapter will not work
+🚀 Creating LanceDB LangChain service for TestBot
+[0;31m❌ LanceDB LangChain service failed[0m
+[1;33mRunning: Memory factory services[0m
+[0;31m❌ Memory factory services failed[0m
+[1;33mRunning: Memory progression test[0m
+================================================================================
+🧪 LOCRIT MEMORY TEST - API ENDPOINTS
+================================================================================
+
+📋 Generated Fictive Character:
+   Name: Katherine Lloyd
+   Age: 64
+   Occupation: Writer
+   City: Samueltown
+   Hobby: painting
+   Pet: cat
+   Favorite Color: ForestGreen
+   Personality: energetic
+
+================================================================================
+TEST 1: Create Conversation
+================================================================================
+✅ Conversation created successfully
+   ID: b0558e94-b2da-4d5c-baac-65f49dd44e91
+   Locrit: Bob Technique
+   Created: 2025-10-05T15:30:38.381106
+
+================================================================================
+TEST 2: Get Conversation History (Empty)
+================================================================================
+✅ Conversation history retrieved
+   Message count: 0
+   Messages: 0
+
+================================================================================
+TEST 3: List User Conversations
+================================================================================
+✅ User conversations listed
+   Total: 5
+   - b0558e94... with Bob Technique
+   - d07589e9... with Bob Technique
+   - 70c6958d... with Bob Technique
+   - 17a594d5... with Bob Technique
+   - 55452c23... with Bob Technique
+
+================================================================================
+TEST 4: Send Message to Conversation
+================================================================================
+   Message: Hello! I want to tell you about Katherine Lloyd, who is 64 years old.
+✅ Message sent successfully
+   Response: Bonjour ! Je m'appelle Bob Technique, un Locrit expert en programmation et technologies. Veuillez me...
+
+================================================================================
+TEST 5: Memory Endpoint
+================================================================================
+⚠️  Status: 500
+
+================================================================================
+📊 TEST SUMMARY
+================================================================================
+
+✅ API Endpoint Tests Completed
+
+📝 Test Results:
+   ✓ Conversation creation: PASS
+   ✓ Conversation retrieval: PASS
+   ✓ User conversations list: PASS
+   ⚠ Message sending: Requires running Locrit
+   ⚠ Memory endpoint: May not be fully implemented
+
+💡 Next Steps:
+   1. Start the Locrit 'Bob Technique' to test message functionality
+   2. Run the full memory progression test with an active Locrit
+   3. Verify memory persistence across conversations
+
+================================================================================
+[0;32m✅ Memory progression test passed[0m
+
+[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[0;34m🔗 INTEGRATION TESTS[0m
+[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+
+[0;34mℹ️  Backend server is running[0m
+[1;33mRunning: Health endpoint[0m
+[0;31m❌ Health endpoint failed[0m
+[1;33mRunning: Locrits API[0m
+[0;32m✅ Locrits API passed[0m
+[0;32m✅ Frontend dev server is running[0m
+
+[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[0;34m📦 DEPENDENCY CHECKS[0m
+[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+
+[0;34mℹ️  Checking Python dependencies...[0m
+[0;32m✅ Python dependencies are compatible[0m
+[0;34mℹ️  Checking for security vulnerabilities...[0m
+[1;33m⚠️  Safety not installed (pip install safety)[0m
+
+[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[0;34m📊 TEST SUMMARY[0m
+[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+
+[0;32m✅ Passed: 8[0m
+[0;31m❌ Failed: 6[0m
+[0;34m⏱️  Duration: 12s[0m
+
+[0;31m⚠️  Some tests failed. Please review the output above.[0m
+

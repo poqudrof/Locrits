@@ -37,7 +37,7 @@ class MemoryMonitor:
         for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
             try:
                 cmdline = proc.info['cmdline']
-                if cmdline and 'web_app.py' in ' '.join(cmdline):
+                if cmdline and 'backend/web_app.py' in ' '.join(cmdline):
                     self.server_pid = proc.info['pid']
                     self.server_process = psutil.Process(self.server_pid)
                     print(f"📊 Found server process: PID {self.server_pid}")
@@ -546,7 +546,7 @@ def main():
         print(f"✅ Server is running (status: {response.status_code})")
     except Exception as e:
         print(f"❌ Server is not accessible: {e}")
-        print(f"   Please ensure the server is running: python web_app.py")
+        print(f"   Please ensure the server is running: python backend/web_app.py")
         sys.exit(1)
 
     # Initialize monitor and tester

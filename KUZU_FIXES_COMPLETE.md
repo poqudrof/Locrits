@@ -178,7 +178,7 @@ The app should now:
 
 ```bash
 # Start the app
-python web_app.py
+python backend/web_app.py
 
 # In another terminal, test concurrent access
 for i in {1..10}; do

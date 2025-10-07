@@ -4,7 +4,7 @@ Web UI pour Locrit - Interface web moderne pour gérer les Locrits
 Point d'entrée principal utilisant la structure modulaire du backend
 """
 
-from backend.app import run_app
+from .app import run_app
 
 if __name__ == '__main__':
     run_app()

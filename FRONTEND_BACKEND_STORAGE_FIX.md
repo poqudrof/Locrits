@@ -94,7 +94,7 @@ loop.close()
 
 ## 🧪 Tests Created
 
-### 1. test_conversation_storage.py
+### 1. tests/memory/test_conversation_storage.py
 **Type:** Unit test
 **Coverage:**
 - Message saving (user/assistant)
@@ -106,7 +106,7 @@ loop.close()
 
 ---
 
-### 2. test_chat_api_storage.py
+### 2. tests/fullstack/test_chat_api_storage.py
 **Type:** REST API integration test
 **Coverage:**
 - HTTP POST to /api/locrits/{name}/chat
@@ -117,7 +117,7 @@ loop.close()
 
 ---
 
-### 3. test_websocket_chat_storage.py ⭐ **NEW**
+### 3. tests/fullstack/test_websocket_chat_storage.py ⭐ **NEW**
 **Type:** WebSocket end-to-end test
 **Coverage:**
 - WebSocket connection
@@ -140,10 +140,10 @@ loop.close()
 #### 1. Restart Backend (CRITICAL!)
 ```bash
 # Stop old backend
-pkill -f "python web_app.py"
+pkill -f "python backend/web_app.py"
 
 # Start fresh backend with fixes
-python web_app.py
+python backend/web_app.py
 ```
 
 #### 2. Start Frontend
@@ -202,9 +202,9 @@ curl -s "http://localhost:5000/api/locrits/Bob%20Technique/memory/summary" | pyt
 2. **backend/routes/websocket.py** - WebSocket fixes (4 changes)
 
 ### Test Files Created
-1. **test_conversation_storage.py** - Unit tests
-2. **test_chat_api_storage.py** - REST API tests
-3. **test_websocket_chat_storage.py** - WebSocket tests (new!)
+1. **tests/memory/test_conversation_storage.py** - Unit tests
+2. **tests/fullstack/test_chat_api_storage.py** - REST API tests
+3. **tests/fullstack/test_websocket_chat_storage.py** - WebSocket tests (new!)
 
 ### Documentation
 1. **CONVERSATION_STORAGE_FIX.md** - Technical details
@@ -217,7 +217,7 @@ curl -s "http://localhost:5000/api/locrits/Bob%20Technique/memory/summary" | pyt
 ### 1. Backend Restart is MANDATORY
 The changes won't take effect until the backend is restarted:
 ```bash
-pkill -f "python web_app.py" && python web_app.py
+pkill -f "python backend/web_app.py" && python backend/web_app.py
 ```
 
 ### 2. WebSocket vs REST API

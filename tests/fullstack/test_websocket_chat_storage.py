@@ -77,7 +77,7 @@ def test_websocket_chat_storage():
         time.sleep(0.5)
     except Exception as e:
         print_error(f"Failed to connect to WebSocket: {e}")
-        print_info("Make sure backend is running: python web_app.py")
+        print_info("Make sure backend is running: python backend/web_app.py")
         return False
 
     # ========================================================================
@@ -222,7 +222,7 @@ def main():
     else:
         print("💥 WEBSOCKET CHAT TEST FAILED!")
         print_info("\nTroubleshooting:")
-        print("  1. Make sure backend is running: python web_app.py")
+        print("  1. Make sure backend is running: python backend/web_app.py")
         print("  2. Check Ollama is running: curl http://localhost:11434")
         print("  3. Verify Locrit is active and configured")
 

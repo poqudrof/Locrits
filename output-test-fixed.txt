@@ -1,0 +1,276 @@
+
+[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[0;34m🚀 LOCRITS TEST SUITE[0m
+[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+
+[0;34mℹ️  Starting comprehensive test suite...[0m
+[0;34mℹ️  Working directory: /mnt/storage/repos/Locrits[0m
+[0;34mℹ️  Activating virtual environment...[0m
+
+[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[0;34m🐍 BACKEND TESTS[0m
+[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+
+[0;34mℹ️  Checking Python version...[0m
+Python 3.13.7
+[0;34mℹ️  Installing backend dependencies...[0m
+[1;33m⚠️  No backend unit tests found (tests/test_backend.py)[0m
+[1;33mRunning: Backend imports[0m
+⚠️  MCP not available - BasicMemoryAdapter will not work
+✓ Memory factory import successful
+[0;32m✅ Backend imports passed[0m
+[1;33mRunning: Config loading[0m
+  File "<string>", line 1
+    import yaml; config = yaml.safe_load(open("config.yaml")); print(f"✓ Config loaded: {len(config.get(\"locrits\", {}).get(\"instances\", {}))} locrits")
+                                                                                                         ^
+SyntaxError: unexpected character after line continuation character
+[0;31m❌ Config loading failed[0m
+[0;34mℹ️  Checking Python syntax...[0m
+[0;32m✅ Python syntax check passed[0m
+
+[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[0;34m⚛️  FRONTEND TESTS[0m
+[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+
+[1;33mRunning: TypeScript type check[0m
+[0;32m✅ TypeScript type check passed[0m
+[1;33mRunning: ESLint check[0m
+
+> frontend@0.0.0 lint
+> eslint .
+
+
+Oops! Something went wrong! :(
+
+ESLint: 9.36.0
+
+ESLint couldn't find an eslint.config.(js|mjs|cjs) file.
+
+From ESLint v9.0.0, the default configuration file is now eslint.config.js.
+If you are using a .eslintrc.* file, please follow the migration guide
+to update your configuration file to the new format:
+
+https://eslint.org/docs/latest/use/configure/migration-guide
+
+If you still have problems after following the migration guide, please stop by
+https://eslint.org/chat/help to chat with the team.
+
+[0;31m❌ ESLint check failed[0m
+[1;33mRunning: Frontend build[0m
+
+> frontend@0.0.0 build
+> tsc -b && vite build
+
+@/components/ui/sonner.tsx(2,35): error TS2307: Cannot find module '@/components/ui/sonner' or its corresponding type declarations.
+src/App.tsx(3,25): error TS2307: Cannot find module '@/components/ui/sonner' or its corresponding type declarations.
+src/components/Footer.tsx(1,23): error TS2307: Cannot find module '@/components/ui/badge' or its corresponding type declarations.
+src/components/Header.tsx(5,24): error TS2307: Cannot find module '@/components/ui/button' or its corresponding type declarations.
+src/components/Header.tsx(12,8): error TS2307: Cannot find module '@/components/ui/dropdown-menu' or its corresponding type declarations.
+src/components/Header.tsx(20,8): error TS2307: Cannot find module '@/components/ui/sheet' or its corresponding type declarations.
+src/components/Navigation.tsx(3,24): error TS2307: Cannot find module '@/components/ui/button' or its corresponding type declarations.
+src/components/Navigation.tsx(4,23): error TS2307: Cannot find module '@/components/ui/badge' or its corresponding type declarations.
+src/components/ui/alert.tsx(2,40): error TS2307: Cannot find module 'class-variance-authority@0.7.1' or its corresponding type declarations.
+src/components/ui/select.tsx(4,34): error TS2307: Cannot find module '@radix-ui/react-select@2.1.6' or its corresponding type declarations.
+src/components/ui/select.tsx(9,8): error TS2307: Cannot find module 'lucide-react@0.487.0' or its corresponding type declarations.
+src/pages/CSSTest.tsx(1,24): error TS2307: Cannot find module '@/components/ui/button' or its corresponding type declarations.
+src/pages/CSSTest.tsx(2,75): error TS2307: Cannot find module '@/components/ui/card' or its corresponding type declarations.
+src/pages/CSSTest.tsx(10,8): error TS2307: Cannot find module '@/components/ui/dropdown-menu' or its corresponding type declarations.
+src/pages/Chat.tsx(4,24): error TS2307: Cannot find module '@/components/ui/button' or its corresponding type declarations.
+src/pages/Chat.tsx(5,58): error TS2307: Cannot find module '@/components/ui/card' or its corresponding type declarations.
+src/pages/Chat.tsx(6,23): error TS2307: Cannot find module '@/components/ui/badge' or its corresponding type declarations.
+src/pages/CreateLocrit.tsx(6,24): error TS2307: Cannot find module '@/components/ui/button' or its corresponding type declarations.
+src/pages/CreateLocrit.tsx(7,23): error TS2307: Cannot find module '@/components/ui/input' or its corresponding type declarations.
+src/pages/CreateLocrit.tsx(8,23): error TS2307: Cannot find module '@/components/ui/label' or its corresponding type declarations.
+src/pages/CreateLocrit.tsx(9,75): error TS2307: Cannot find module '@/components/ui/card' or its corresponding type declarations.
+src/pages/Dashboard.tsx(3,75): error TS2307: Cannot find module '@/components/ui/card' or its corresponding type declarations.
+src/pages/Dashboard.tsx(4,24): error TS2307: Cannot find module '@/components/ui/button' or its corresponding type declarations.
+src/pages/Dashboard.tsx(5,23): error TS2307: Cannot find module '@/components/ui/badge' or its corresponding type declarations.
+src/pages/LocritSettings.tsx(6,75): error TS2307: Cannot find module '@/components/ui/card' or its corresponding type declarations.
+src/pages/LocritSettings.tsx(7,24): error TS2307: Cannot find module '@/components/ui/button' or its corresponding type declarations.
+src/pages/LocritSettings.tsx(8,23): error TS2307: Cannot find module '@/components/ui/input' or its corresponding type declarations.
+src/pages/LocritSettings.tsx(9,23): error TS2307: Cannot find module '@/components/ui/label' or its corresponding type declarations.
+src/pages/LocritSettings.tsx(10,23): error TS2307: Cannot find module '@/components/ui/badge' or its corresponding type declarations.
+src/pages/LocritSettings.tsx(11,58): error TS2307: Cannot find module '@/components/ui/tabs' or its corresponding type declarations.
+src/pages/LocritSettings.tsx(473,39): error TS7006: Parameter 'value' implicitly has an 'any' type.
+src/pages/Login.tsx(3,24): error TS2307: Cannot find module '@/components/ui/button' or its corresponding type declarations.
+src/pages/Login.tsx(4,87): error TS2307: Cannot find module '@/components/ui/card' or its corresponding type declarations.
+src/pages/MemoryExplorer.tsx(3,58): error TS2307: Cannot find module '@/components/ui/card' or its corresponding type declarations.
+src/pages/MemoryExplorer.tsx(4,24): error TS2307: Cannot find module '@/components/ui/button' or its corresponding type declarations.
+src/pages/MemoryExplorer.tsx(5,23): error TS2307: Cannot find module '@/components/ui/input' or its corresponding type declarations.
+src/pages/MemoryExplorer.tsx(6,26): error TS2307: Cannot find module '@/components/ui/textarea' or its corresponding type declarations.
+src/pages/MemoryExplorer.tsx(7,58): error TS2307: Cannot find module '@/components/ui/tabs' or its corresponding type declarations.
+src/pages/MemoryExplorer.tsx(8,23): error TS2307: Cannot find module '@/components/ui/badge' or its corresponding type declarations.
+src/pages/MemoryExplorer.tsx(9,187): error TS2307: Cannot find module '@/components/ui/alert-dialog' or its corresponding type declarations.
+src/pages/MemoryExplorer.tsx(10,81): error TS2307: Cannot find module '@/components/ui/dialog' or its corresponding type declarations.
+src/pages/MemoryExplorer.tsx(11,23): error TS2307: Cannot find module '@/components/ui/label' or its corresponding type declarations.
+src/pages/MemoryExplorer.tsx(12,24): error TS2307: Cannot find module '@/components/ui/slider' or its corresponding type declarations.
+src/pages/MemoryExplorer.tsx(421,32): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/pages/MemoryExplorer.tsx(454,26): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/pages/MemoryExplorer.tsx(455,28): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/pages/MemoryExplorer.tsx(865,28): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/pages/MyLocrits.tsx(3,75): error TS2307: Cannot find module '@/components/ui/card' or its corresponding type declarations.
+src/pages/MyLocrits.tsx(4,24): error TS2307: Cannot find module '@/components/ui/button' or its corresponding type declarations.
+src/pages/MyLocrits.tsx(5,23): error TS2307: Cannot find module '@/components/ui/badge' or its corresponding type declarations.
+src/pages/Settings.tsx(2,24): error TS2307: Cannot find module '@/components/ui/button' or its corresponding type declarations.
+src/pages/Settings.tsx(3,23): error TS2307: Cannot find module '@/components/ui/input' or its corresponding type declarations.
+src/pages/Settings.tsx(4,23): error TS2307: Cannot find module '@/components/ui/label' or its corresponding type declarations.
+src/pages/Settings.tsx(5,87): error TS2307: Cannot find module '@/components/ui/card' or its corresponding type declarations.
+src/pages/Settings.tsx(6,23): error TS2307: Cannot find module '@/components/ui/badge' or its corresponding type declarations.
+src/pages/Settings.tsx(505,28): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/pages/Settings.tsx(533,28): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/pages/Settings.tsx(619,26): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/pages/Settings.tsx(763,34): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/pages/Settings.tsx(774,34): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/pages/Settings.tsx(853,40): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/pages/Settings.tsx(876,40): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/pages/Settings.tsx(885,40): error TS7006: Parameter 'e' implicitly has an 'any' type.
+src/pages/Settings.tsx(894,40): error TS7006: Parameter 'e' implicitly has an 'any' type.
+[0;31m❌ Frontend build failed[0m
+[1;33m⚠️  No frontend test script found[0m
+
+[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[0;34m🧠 MEMORY SERVICE TESTS[0m
+[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+
+[0;34mℹ️  NOTE: Kuzu tests removed due to Python 3.13 compatibility issues[0m
+[1;33mRunning: Plaintext memory service[0m
+⚠️  MCP not available - BasicMemoryAdapter will not work
+📄 Creating plaintext file memory service for TestBot
+📄 Plain text memory service initialized for TestBot
+✓ Plaintext service initialized
+[0;32m✅ Plaintext memory service passed[0m
+[1;33mRunning: LanceDB LangChain service[0m
+Traceback (most recent call last):
+  File "<string>", line 14, in <module>
+    asyncio.run(test())
+    ~~~~~~~~~~~^^^^^^^^
+  File "/usr/lib/python3.13/asyncio/runners.py", line 195, in run
+    return runner.run(main)
+           ~~~~~~~~~~^^^^^^
+  File "/usr/lib/python3.13/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^^
+  File "/usr/lib/python3.13/asyncio/base_events.py", line 725, in run_until_complete
+    return future.result()
+           ~~~~~~~~~~~~~^^
+  File "<string>", line 6, in test
+    service = MemoryServiceFactory.create_memory_service(
+        "TestBot", "lancedb_langchain", {"database_path": "data/memory"}
+    )
+  File "/mnt/storage/repos/Locrits/src/services/memory/memory_factory.py", line 77, in create_memory_service
+    return LanceDBLangChainAdapter(locrit_name, config)
+TypeError: Can't instantiate abstract class LanceDBLangChainAdapter without an implementation for abstract methods 'cleanup_old_memories', 'get_memory_stats'
+⚠️  MCP not available - BasicMemoryAdapter will not work
+🚀 Creating LanceDB LangChain service for TestBot
+[0;31m❌ LanceDB LangChain service failed[0m
+[1;33mRunning: Memory factory services[0m
+  File "<string>", line 9
+    print(f"  - {svc_type}: {info[\"name\"]}")
+                                   ^
+SyntaxError: unexpected character after line continuation character
+[0;31m❌ Memory factory services failed[0m
+[1;33mRunning: Memory progression test[0m
+================================================================================
+🧪 LOCRIT MEMORY TEST - API ENDPOINTS
+================================================================================
+
+📋 Generated Fictive Character:
+   Name: Beverly Gonzalez
+   Age: 40
+   Occupation: Insurance claims handler
+   City: Port Aprilborough
+   Hobby: reading
+   Pet: hamster
+   Favorite Color: Red
+   Personality: calm
+
+================================================================================
+TEST 1: Create Conversation
+================================================================================
+✅ Conversation created successfully
+   ID: ccefcaa9-f674-4805-94b8-300e146ecf75
+   Locrit: Bob Technique
+   Created: 2025-10-05T15:52:31.427611
+
+================================================================================
+TEST 2: Get Conversation History (Empty)
+================================================================================
+✅ Conversation history retrieved
+   Message count: 0
+   Messages: 0
+
+================================================================================
+TEST 3: List User Conversations
+================================================================================
+✅ User conversations listed
+   Total: 6
+   - ccefcaa9... with Bob Technique
+   - b0558e94... with Bob Technique
+   - d07589e9... with Bob Technique
+   - 70c6958d... with Bob Technique
+   - 17a594d5... with Bob Technique
+   - 55452c23... with Bob Technique
+
+================================================================================
+TEST 4: Send Message to Conversation
+================================================================================
+   Message: Hello! I want to tell you about Beverly Gonzalez, who is 40 years old.
+✅ Message sent successfully
+   Response: Bienvenue ! Je suis Bob Technique, votre expert en programmation et technologies. Qu'est-ce que vous...
+
+================================================================================
+TEST 5: Memory Endpoint
+================================================================================
+⚠️  Status: 500
+
+================================================================================
+📊 TEST SUMMARY
+================================================================================
+
+✅ API Endpoint Tests Completed
+
+📝 Test Results:
+   ✓ Conversation creation: PASS
+   ✓ Conversation retrieval: PASS
+   ✓ User conversations list: PASS
+   ⚠ Message sending: Requires running Locrit
+   ⚠ Memory endpoint: May not be fully implemented
+
+💡 Next Steps:
+   1. Start the Locrit 'Bob Technique' to test message functionality
+   2. Run the full memory progression test with an active Locrit
+   3. Verify memory persistence across conversations
+
+================================================================================
+[0;32m✅ Memory progression test passed[0m
+
+[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[0;34m🔗 INTEGRATION TESTS[0m
+[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+
+[0;34mℹ️  Backend server is running[0m
+[1;33mRunning: Health endpoint[0m
+[0;31m❌ Health endpoint failed[0m
+[1;33mRunning: Locrits API[0m
+[0;32m✅ Locrits API passed[0m
+[0;32m✅ Frontend dev server is running[0m
+
+[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[0;34m📦 DEPENDENCY CHECKS[0m
+[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+
+[0;34mℹ️  Checking Python dependencies...[0m
+[0;32m✅ Python dependencies are compatible[0m
+[0;34mℹ️  Checking for security vulnerabilities...[0m
+[1;33m⚠️  Safety not installed (pip install safety)[0m
+
+[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+[0;34m📊 TEST SUMMARY[0m
+[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+
+[0;32m✅ Passed: 8[0m
+[0;31m❌ Failed: 6[0m
+[0;34m⏱️  Duration: 14s[0m
+
+[0;31m⚠️  Some tests failed. Please review the output above.[0m
+

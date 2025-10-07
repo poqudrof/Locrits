@@ -50,12 +50,12 @@ The test creates a fictive character using Faker and progressively shares inform
 
 ### Basic Usage (Default Locrit)
 ```bash
-.venv/bin/python test_memory_progression.py
+.venv/bin/python tests/memory/test_memory_progression.py
 ```
 
 ### With Custom Locrit
 ```bash
-.venv/bin/python test_memory_progression.py "Your Locrit Name"
+.venv/bin/python tests/memory/test_memory_progression.py "Your Locrit Name"
 ```
 
 ## Expected Results
@@ -172,7 +172,7 @@ SERVER_PID=$!
 sleep 5
 
 # Run test
-.venv/bin/python test_memory_progression.py "Test Locrit"
+.venv/bin/python tests/memory/test_memory_progression.py "Test Locrit"
 
 # Cleanup
 kill $SERVER_PID

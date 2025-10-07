@@ -385,5 +385,5 @@ The key insight of this implementation is:
 **Testing:**
 Run the test script to verify everything works:
 ```bash
-python test_conversation_api.py "Pixie l'Organisateur"
+python tests/fullstack/test_conversation_api.py "Pixie l'Organisateur"
 ```

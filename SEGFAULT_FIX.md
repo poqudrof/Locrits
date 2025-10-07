@@ -141,7 +141,7 @@ Fatal Python error: Segmentation fault
 ### Verify the fix:
 ```bash
 # Start the application
-python web_app.py
+python backend/web_app.py
 
 # Open multiple browser tabs
 # Send messages simultaneously to the same Locrit

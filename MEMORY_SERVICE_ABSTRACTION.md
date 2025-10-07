@@ -447,7 +447,7 @@ for result in results:
 
 ```bash
 # Run memory progression test
-.venv/bin/python test_memory_progression_simple.py
+.venv/bin/python tests/memory/test_memory_progression_simple.py
 ```
 
 ### Test Service Switching

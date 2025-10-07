@@ -193,7 +193,7 @@ if __name__ == "__main__":
 
     if not check_backend():
         print("\n💡 Please start the backend first:")
-        print("   python web_app.py")
+        print("   python backend/web_app.py")
         sys.exit(1)
 
     print("\n" + "=" * 60)

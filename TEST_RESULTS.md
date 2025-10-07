@@ -176,13 +176,13 @@ result = asyncio.run(conversation_service.send_message(
 3. **Run full test suite** - When server fixed
    ```bash
    # Start server
-   .venv/bin/python web_app.py
+   .venv/bin/python backend/web_app.py
 
    # Run simple test
-   .venv/bin/python test_memory_progression_simple.py
+   .venv/bin/python tests/memory/test_memory_progression_simple.py
 
    # Run full test (requires Locrit)
-   .venv/bin/python test_memory_progression.py "Locrit Name"
+   .venv/bin/python tests/memory/test_memory_progression.py "Locrit Name"
    ```
 
 ## Server Startup Commands Tested
@@ -193,7 +193,7 @@ result = asyncio.run(conversation_service.send_message(
 # Result: Server starts, logs shown, but requests timeout
 
 # Method 2: web_app.py
-.venv/bin/python web_app.py
+.venv/bin/python backend/web_app.py
 # Result: Server starts, same timeout issue
 ```
 

@@ -1,4 +1,3 @@
-textual
 ollama
 ddgs
 beautifulsoup4

@@ -205,7 +205,6 @@ Capacités d'action multi-étapes :
 - [x] Raccourcis clavier globaux (d=dark, q=quit)
 
 ### 🎨 **Design et UX**
-- [x] Thème Textual cohérent avec CSS
 - [x] Emojis pour identification rapide
 - [x] Classes CSS pour sections (containers, buttons, etc.)
 - [x] Gestion des couleurs par type d'action
@@ -299,7 +298,6 @@ Capacités d'action multi-étapes :
 - [ ] Raccourcis clavier globaux (d=dark, q=quit)
 
 ### 🎨 **Design et UX**
-- [ ] Thème Textual cohérent avec CSS
 - [ ] Emojis pour identification rapide
 - [ ] Classes CSS pour sections (containers, buttons, etc.)
 - [ ] Gestion des couleurs par type d'action

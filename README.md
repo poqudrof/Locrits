@@ -13,7 +13,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 
 # 3. Démarrer le backend
-python web_app.py
+python backend/web_app.py
 
 # 4. Ouvrir dans votre navigateur
 # http://localhost:5000
@@ -77,7 +77,7 @@ src/
 
 ### Notes techniques
 - **Python 3.12.2** avec environnement virtuel configuré
-- **Dépendances** : textual, ollama, sentence-transformers, faiss-cpu, fastapi
+- **Dépendances** :  ollama, sentence-transformers, faiss-cpu, fastapi
 - **Base de données** : SQLite avec index FAISS pour recherche vectorielle
 - **Communication** : REST API + WebSocket pour temps réel
 
@@ -113,7 +113,7 @@ Si vous rencontrez des erreurs CORS entre le frontend et le backend :
 
 1. **Vérifiez que le backend est démarré en premier**
 2. **Ports supportés automatiquement** : 3000, 5173, 5174 (localhost et localhost)
-3. **Test CORS** : `python test_cors.py` (après installation des dépendances)
+3. **Test CORS** : `python tests/fullstack/debug_cors.py` (après installation des dépendances)
 
 Le backend est configuré pour accepter les requêtes cross-origin depuis les ports de développement standard.
 
@@ -208,7 +208,7 @@ locrit/
 ├── logs/               # Journaux de l'application
 ├── data/               # Base de données SQLite
 ├── admin/              # Fichiers admin Firebase SDK
-├── web_app.py          # Point d'entrée backend Flask ✨
+├── backend/web_app.py  # Point d'entrée backend Flask ✨
 ├── config.yaml         # Configuration principale
 ├── package.json        # Métadonnées projet Node.js
 └── requirements.txt    # Dépendances Python

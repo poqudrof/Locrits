@@ -16,7 +16,7 @@ npm run dev
 ### 2. Test the API
 ```bash
 # Run comprehensive tests
-python test_locrit_api.py
+python tests/fullstack/test_locrit_api.py
 
 # Or use the interactive chat client
 python chat_client.py
@@ -133,7 +133,7 @@ async function chatWithLocrit(locritName, message) {
 
 ## Test Results
 
-When you run `python test_locrit_api.py`, you should see output like:
+When you run `python tests/fullstack/test_locrit_api.py`, you should see output like:
 
 ```
 🧪 Starting Locrit HTTP API Tests

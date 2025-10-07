@@ -209,15 +209,42 @@ for svc_type, info in non_kuzu_services.items():
 "' || true
 
     # Run memory progression test if it exists
-    if [ -f "test_memory_progression_simple.py" ]; then
-        run_test "Memory progression test" "python test_memory_progression_simple.py" || true
+    if [ -f "tests/memory/test_memory_progression_simple.py" ]; then
+        run_test "Memory progression test" "python tests/memory/test_memory_progression_simple.py" || true
     else
         print_warning "Memory progression test not found"
     fi
 }
 
 ###############################################################################
-# 4. INTEGRATION TESTS
+# 4. FULLSTACK TESTS
+###############################################################################
+
+test_fullstack() {
+    print_header "🌐 FULLSTACK/API TESTS"
+
+    # Check if backend server is running
+    if curl -s http://localhost:5000/health >/dev/null 2>&1; then
+        print_info "Backend server is running - fullstack tests can be run"
+
+        # List available fullstack tests
+        print_info "Available fullstack tests:"
+        if [ -d "tests/fullstack" ]; then
+            for test_file in tests/fullstack/test_*.py; do
+                if [ -f "$test_file" ]; then
+                    print_info "  - $(basename $test_file)"
+                fi
+            done
+        fi
+
+    else
+        print_warning "Backend server not running - skipping fullstack tests"
+        print_info "To run fullstack tests, start backend: python backend/web_app.py"
+    fi
+}
+
+###############################################################################
+# 5. INTEGRATION TESTS
 ###############################################################################
 
 test_integration() {
@@ -232,7 +259,7 @@ test_integration() {
         run_test "Locrits API" "curl -s http://localhost:5000/api/locrits | grep -q 'success'" || true
 
     else
-        print_warning "Backend server not running (start with: python src/web_app.py)"
+        print_warning "Backend server not running (start with: python backend/web_app.py)"
     fi
 
     # Check if frontend dev server is running
@@ -244,7 +271,7 @@ test_integration() {
 }
 
 ###############################################################################
-# 5. DEPENDENCY CHECKS
+# 6. DEPENDENCY CHECKS
 ###############################################################################
 
 test_dependencies() {
@@ -285,6 +312,7 @@ main() {
     test_backend
     test_frontend
     test_memory_services
+    test_fullstack
     test_integration
     test_dependencies
 
@@ -310,6 +338,7 @@ main() {
 SKIP_BACKEND=false
 SKIP_FRONTEND=false
 SKIP_MEMORY=false
+SKIP_FULLSTACK=false
 
 while [[ $# -gt 0 ]]; do
     case $1 in
@@ -325,6 +354,10 @@ while [[ $# -gt 0 ]]; do
             SKIP_MEMORY=true
             shift
             ;;
+        --skip-fullstack)
+            SKIP_FULLSTACK=true
+            shift
+            ;;
         --help|-h)
             echo "Usage: ./run_tests.sh [OPTIONS]"
             echo ""
@@ -332,11 +365,13 @@ while [[ $# -gt 0 ]]; do
             echo "  --skip-backend     Skip backend tests"
             echo "  --skip-frontend    Skip frontend tests"
             echo "  --skip-memory      Skip memory service tests"
+            echo "  --skip-fullstack   Skip fullstack/API tests"
             echo "  --help, -h         Show this help message"
             echo ""
             echo "Examples:"
             echo "  ./run_tests.sh                    # Run all tests"
             echo "  ./run_tests.sh --skip-frontend    # Skip frontend tests"
+            echo "  ./run_tests.sh --skip-fullstack   # Skip fullstack tests"
             exit 0
             ;;
         *)

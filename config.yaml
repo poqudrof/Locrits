@@ -68,7 +68,7 @@ locrits:
         llm_info: true
         logs: true
         quick_memory: true
-      active: false
+      active: true
       created_at: '2025-09-14T18:57:16.743340'
       description: Le premire locrit !
       memory_service: plaintext_file
@@ -81,7 +81,7 @@ locrits:
         locrits: true
         platform: false
       public_address: ''
-      updated_at: '2025-10-05T10:25:55.500933+00:00'
+      updated_at: '2025-10-07T18:03:31.505734+00:00'
     Marie Recherche:
       access_to:
         full_memory: true

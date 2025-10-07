@@ -64,7 +64,7 @@ def test_chat_api_storage():
 
     except requests.exceptions.ConnectionError:
         print_error("Cannot connect to backend server at localhost:5000")
-        print_info("Make sure the backend is running: python web_app.py")
+        print_info("Make sure the backend is running: python backend/web_app.py")
         return False
     except Exception as e:
         print_error(f"Chat API call failed: {e}")

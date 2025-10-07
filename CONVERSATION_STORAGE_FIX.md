@@ -149,28 +149,28 @@ Real-world WebSocket chat test that:
 
 ### 1. Run Unit Test (No server required)
 ```bash
-python test_conversation_storage.py
+python tests/memory/test_conversation_storage.py
 ```
 
 ### 2. Run API Test (requires backend)
 ```bash
 # Terminal 1: Start backend
-python web_app.py
+python backend/web_app.py
 
 # Terminal 2: Run test
-python test_chat_api_storage.py
+python tests/fullstack/test_chat_api_storage.py
 ```
 
 ### 3. Run WebSocket Test (requires backend + Ollama)
 ```bash
 # Terminal 1: Start backend
-python web_app.py
+python backend/web_app.py
 
 # Terminal 2: Ensure Ollama is running
 curl http://localhost:11434
 
 # Terminal 3: Run test
-python test_websocket_chat_storage.py
+python tests/fullstack/test_websocket_chat_storage.py
 ```
 
 ## How to Verify Fix
@@ -180,10 +180,10 @@ python test_websocket_chat_storage.py
 1. **Restart the backend (REQUIRED):**
    ```bash
    # Stop current backend
-   pkill -f "python web_app.py"
+   pkill -f "python backend/web_app.py"
 
    # Start fresh
-   python web_app.py
+   python backend/web_app.py
    ```
 
 2. **Start frontend:**
@@ -218,10 +218,10 @@ python test_websocket_chat_storage.py
 
 ```bash
 # Stop the running backend (Ctrl+C or kill process)
-pkill -f "python web_app.py"
+pkill -f "python backend/web_app.py"
 
 # Start it again
-python web_app.py
+python backend/web_app.py
 ```
 
 ### Why asyncio.run() Doesn't Work

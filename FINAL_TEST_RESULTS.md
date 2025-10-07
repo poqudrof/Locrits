@@ -102,10 +102,10 @@ curl -s http://localhost:5000/health | grep -q 'healthy'
 **Fix**: Restart the backend server:
 ```bash
 # Stop current server (Ctrl+C or kill process)
-pkill -f "python web_app.py"
+pkill -f "python backend/web_app.py"
 
 # Start new server
-python web_app.py
+python backend/web_app.py
 ```
 
 ---
@@ -143,7 +143,7 @@ python web_app.py
 ### High Priority
 1. **Restart backend server** to enable `/health` endpoint
    ```bash
-   pkill -f "python web_app.py" && python web_app.py
+   pkill -f "python backend/web_app.py" && python backend/web_app.py
    ```
 
 ### Medium Priority
@@ -175,7 +175,7 @@ python -c 'from src.services.memory.memory_factory import MemoryServiceFactory'
 cd frontend && npm run build
 
 # Memory services only
-python test_memory_progression_simple.py
+python tests/memory/test_memory_progression_simple.py
 ```
 
 ### Verify Health Endpoint (after restart)

@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Locrits — Vos agents IA, chez vous</title>
+  <meta name="description" content="Locrits fait tourner vos agents IA sur votre machine. Chaque Locrit a son identité, sa mémoire et ses permissions. Propulsé par Ollama, local par défaut.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <!-- Tailwind compilé par `npm run build` (voir tailwind.config.js). -->
+  <link rel="stylesheet" href="styles.css">
+
+  <style>
+    html { scroll-behavior: smooth; }
+    body { animation: pageFadeIn 0.4s ease-out; background: #FAFAFA; }
+    @keyframes pageFadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    /* Scroll reveal */
+    .reveal {
+      opacity: 0;
+      transform: translateY(20px);
+      transition: opacity 0.4s ease-out, transform 0.4s ease-out;
+    }
+    .reveal.visible { opacity: 1; transform: translateY(0); }
+    .reveal-d1 { transition-delay: 0.1s; }
+    .reveal-d2 { transition-delay: 0.2s; }
+    .reveal-d3 { transition-delay: 0.3s; }
+    .reveal-d4 { transition-delay: 0.4s; }
+
+    /* Cards */
+    .card {
+      background: white;
+      border: 1px solid #E5E7EB;
+      border-radius: 0.75rem;
+      transition: border-color 0.2s ease;
+    }
+    .card:hover { border-color: #4338CA; }
+
+    /* Buttons */
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      padding: 0.75rem 1.5rem; border-radius: 0.375rem;
+      background: #4338CA; color: white;
+      border: 1px solid #4338CA;
+      font-weight: 600; font-size: 0.9375rem;
+      text-decoration: none; cursor: pointer;
+      transition: background 0.2s ease;
+      white-space: nowrap;
+    }
+    .btn-primary:hover { background: #3730A3; border-color: #3730A3; }
+    .btn-primary:active { opacity: 0.9; }
+
+    .btn-outline {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      padding: 0.75rem 1.5rem; border-radius: 0.375rem;
+      background: transparent; color: #4338CA;
+      border: 1px solid #4338CA;
+      font-weight: 600; font-size: 0.9375rem;
+      text-decoration: none; cursor: pointer;
+      transition: background 0.2s ease;
+      white-space: nowrap;
+    }
+    .btn-outline:hover { background: #EEF2FF; }
+
+    /* Compact CTA in the navbar. This block loads after Tailwind, so .btn-primary
+       would win over `hidden`, `py-2` and `text-sm` — hence explicit rules here. */
+    .btn-nav { padding: 0.5rem 1rem; font-size: 0.875rem; }
+    @media (max-width: 767px) { .btn-nav { display: none; } }
+
+    /* Nav transition */
+    #navbar { transition: background 0.25s ease, box-shadow 0.25s ease; }
+    #navbar.scrolled { background: white !important; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+
+    /* Cursor + typing dots */
+    .blink { animation: blink 1s step-end infinite; }
+    @keyframes blink { 50% { opacity: 0; } }
+    .typing span {
+      display: inline-block; width: 6px; height: 6px; border-radius: 9999px;
+      background: #9CA3AF; animation: typing 1.2s ease-in-out infinite;
+    }
+    .typing span:nth-child(2) { animation-delay: 0.15s; }
+    .typing span:nth-child(3) { animation-delay: 0.3s; }
+    @keyframes typing { 0%, 60%, 100% { opacity: 0.3; transform: translateY(0); } 30% { opacity: 1; transform: translateY(-3px); } }
+
+    /* Step connector */
+    .step-line {
+      width: 2px; background: #E5E7EB; flex: 1; margin-top: 6px;
+    }
+
+    /* Product tour */
+    /* Mobile: a row of scrollable chips. Desktop (lg): a vertical list with descriptions. */
+    .tour-tab {
+      display: block; width: auto; text-align: left;
+      padding: 0.5rem 0.875rem; border-radius: 9999px;
+      background: white; border: 1px solid #E5E7EB;
+      cursor: pointer; flex-shrink: 0;
+      transition: background 0.2s ease, border-color 0.2s ease;
+    }
+    .tour-tab:hover { background: #F3F4F6; }
+    .tour-tab:focus-visible { outline: 2px solid #4338CA; outline-offset: 2px; }
+    .tour-tab.active { background: #EEF2FF; border-color: #4338CA; }
+    @media (min-width: 1024px) {
+      .tour-tab {
+        width: 100%; padding: 0.875rem 1rem; border-radius: 0.625rem;
+        background: transparent; border-color: transparent;
+      }
+      .tour-tab.active { background: white; border-color: #4338CA; }
+    }
+    .tour-tab .tour-tab-title { color: #111827; }
+    .tour-tab.active .tour-tab-title { color: #4338CA; }
+    #tour-img { transition: opacity 0.18s ease; }
+    #tour-img.swapping { opacity: 0; }
+    .no-scrollbar { scrollbar-width: none; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      body, .blink, .typing span { animation: none; }
+      .reveal { opacity: 1; transform: none; transition: none; }
+      #tour-img { transition: none; }
+    }
+  </style>
+</head>
+
+<body class="font-sans text-gray-900 antialiased" style="background:#FAFAFA;">
+
+  <!-- ======================== NAVBAR ======================== -->
+  <nav id="navbar" class="fixed top-0 inset-x-0 z-50" style="background:transparent;">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="flex items-center justify-between h-16">
+
+        <!-- Logo -->
+        <a href="#" class="flex items-center gap-2 no-underline">
+          <svg width="30" height="30" viewBox="0 0 30 30" fill="none" aria-hidden="true">
+            <rect width="30" height="30" rx="8" fill="#4338CA"/>
+            <path d="M8 14.5L15 8.5L22 14.5V21.5H8V14.5Z"
+              stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M13 21.5V17H17V21.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="22.5" cy="8.5" r="2.5" fill="#D97706"/>
+          </svg>
+          <span class="font-extrabold text-xl tracking-tight text-gray-900">locrits</span>
+        </a>
+
+        <!-- Desktop links -->
+        <div id="nav-links" class="hidden md:flex items-center gap-8">
+          <a href="#features" class="text-sm font-medium text-gray-500 hover:text-primary transition-colors no-underline">Fonctionnalités</a>
+          <a href="#apercu" class="text-sm font-medium text-gray-500 hover:text-primary transition-colors no-underline">Aperçu</a>
+          <a href="#how-it-works" class="text-sm font-medium text-gray-500 hover:text-primary transition-colors no-underline">Comment ça marche</a>
+          <a href="#benefits" class="text-sm font-medium text-gray-500 hover:text-primary transition-colors no-underline">Pour qui</a>
+        </div>
+
+        <!-- CTA + hamburger -->
+        <div class="flex items-center gap-3">
+          <a href="https://github.com/poqudrof/Locrits" class="btn-primary btn-nav">Essayer</a>
+          <button id="burger" onclick="toggleMenu()" aria-label="Ouvrir le menu" class="md:hidden p-1 border-0 bg-transparent cursor-pointer">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#374151" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+              <line x1="3" y1="6" x2="21" y2="6"/>
+              <line x1="3" y1="12" x2="21" y2="12"/>
+              <line x1="3" y1="18" x2="21" y2="18"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile menu -->
+    <div id="mobile-menu" class="hidden bg-white border-t border-gray-100 px-6 py-4 flex-col gap-3">
+      <a href="#features" onclick="closeMenu()" class="block py-2 text-gray-700 font-medium border-b border-gray-50 no-underline">Fonctionnalités</a>
+      <a href="#apercu" onclick="closeMenu()" class="block py-2 text-gray-700 font-medium border-b border-gray-50 no-underline">Aperçu</a>
+      <a href="#how-it-works" onclick="closeMenu()" class="block py-2 text-gray-700 font-medium border-b border-gray-50 no-underline">Comment ça marche</a>
+      <a href="#benefits" onclick="closeMenu()" class="block py-2 text-gray-700 font-medium border-b border-gray-50 no-underline">Pour qui</a>
+      <a href="https://github.com/poqudrof/Locrits" onclick="closeMenu()" class="btn-primary mt-2 justify-center">Essayer Locrits</a>
+    </div>
+  </nav>
+
+  <!-- ======================== HERO ======================== -->
+  <section id="hero" class="min-h-screen flex items-center pt-16" style="padding-bottom:4rem;">
+    <div class="max-w-6xl mx-auto px-6 w-full">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+
+        <!-- Text -->
+        <div>
+          <!-- Badge -->
+          <div class="inline-flex items-center gap-2 rounded-full border px-3 py-1.5 mb-6"
+               style="background:#EEF2FF; border-color:#C7D2FE;">
+            <div class="w-1.5 h-1.5 rounded-full" style="background:#4338CA;"></div>
+            <span class="text-xs font-semibold" style="color:#4338CA;">Version 1.0 bêta</span>
+          </div>
+
+          <h1 class="font-extrabold leading-none tracking-tight text-gray-900 mb-5"
+              style="font-size:clamp(2.25rem,5vw,3.75rem); letter-spacing:-0.03em; line-height:1.08;">
+            Vos agents IA.<br>
+            Leur mémoire.<br>
+            <span style="color:#4338CA;">Chez vous.</span>
+          </h1>
+
+          <p class="text-gray-500 mb-8 leading-relaxed"
+             style="font-size:clamp(1rem,2vw,1.125rem); max-width:520px; line-height:1.7;">
+            Locrits fait tourner vos chatbots autonomes sur votre propre machine.<br>
+            Chaque Locrit a son identité, sa mémoire et ses permissions.
+          </p>
+
+          <div class="flex flex-wrap gap-3 mb-8">
+            <a href="https://github.com/poqudrof/Locrits" class="btn-primary" style="font-size:1rem; padding:0.875rem 1.75rem;">
+              Essayer Locrits
+            </a>
+            <a href="#apercu" class="btn-outline" style="font-size:1rem; padding:0.875rem 1.75rem;">
+              Voir l'interface
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <line x1="5" y1="12" x2="19" y2="12"/>
+                <polyline points="12 5 19 12 12 19"/>
+              </svg>
+            </a>
+          </div>
+
+          <!-- Trust signals -->
+          <div class="flex flex-wrap gap-5">
+            <span class="flex items-center gap-1.5 text-sm text-gray-400">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4338CA" stroke-width="2.5"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+              Local par défaut
+            </span>
+            <span class="flex items-center gap-1.5 text-sm text-gray-400">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4338CA" stroke-width="2.5"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+              Aucun compte requis
+            </span>
+            <span class="flex items-center gap-1.5 text-sm text-gray-400">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#4338CA" stroke-width="2.5"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+              Propulsé par Ollama
+            </span>
+          </div>
+        </div>
+
+        <!-- Chat mockup (illustration, comme le terminal de Plati — les vraies captures sont dans #apercu) -->
+        <div class="relative" aria-hidden="true">
+          <div class="rounded-xl overflow-hidden bg-white" style="box-shadow:0 20px 60px rgba(0,0,0,0.18);">
+            <!-- Title bar -->
+            <div class="flex items-center gap-1.5 px-4 py-3" style="background:#1e1e2e; border-bottom:1px solid rgba(255,255,255,0.05);">
+              <div class="w-3 h-3 rounded-full" style="background:#ff5f57;"></div>
+              <div class="w-3 h-3 rounded-full" style="background:#febc2e;"></div>
+              <div class="w-3 h-3 rounded-full" style="background:#28c840;"></div>
+              <span class="ml-3 text-xs" style="color:#9ca3af; font-family:'JetBrains Mono',monospace;">Bob Technique — llama3.1 · local</span>
+            </div>
+            <!-- Conversation -->
+            <div class="p-5 flex flex-col gap-3" style="font-size:0.875rem; line-height:1.55; background:#FAFAFA;">
+              <div class="self-end rounded-2xl rounded-br-md px-4 py-2.5 text-white" style="background:#4338CA; max-width:82%;">
+                Salut Bob ! On reprend le script de sauvegarde ?
+              </div>
+
+              <div class="self-start inline-flex items-center gap-1.5 rounded-full px-2.5 py-1"
+                   style="background:#fff8ed; border:1px solid #fde3b8; font-size:0.6875rem; font-weight:600; color:#b86205;">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round">
+                  <ellipse cx="12" cy="5" rx="9" ry="3"/>
+                  <path d="M3 5v14a9 3 0 0 0 18 0V5"/>
+                  <path d="M3 12a9 3 0 0 0 18 0"/>
+                </svg>
+                Mémoire · 2 souvenirs retrouvés
+              </div>
+
+              <div class="self-start rounded-2xl rounded-bl-md px-4 py-2.5 bg-white text-gray-700" style="border:1px solid #E5E7EB; max-width:86%;">
+                Bien sûr. La dernière fois, on s'était arrêtés sur la rotation des archives&nbsp;: tu voulais garder 7&nbsp;jours. Je te propose d'ajouter une vérification d'intégrité.
+              </div>
+
+              <div class="self-end rounded-2xl rounded-br-md px-4 py-2.5 text-white" style="background:#4338CA; max-width:82%;">
+                Parfait, vas-y.
+              </div>
+
+              <div class="self-start rounded-2xl rounded-bl-md px-4 py-3 bg-white" style="border:1px solid #E5E7EB;">
+                <div class="typing flex items-center gap-1"><span></span><span></span><span></span></div>
+              </div>
+            </div>
+            <!-- Input -->
+            <div class="flex items-center gap-2 px-4 py-3 bg-white" style="border-top:1px solid #E5E7EB;">
+              <div class="flex-1 rounded-md px-3 py-2 text-gray-400" style="border:1px solid #E5E7EB; font-size:0.8125rem;">
+                Tapez votre message<span class="blink">▏</span>
+              </div>
+              <div class="w-9 h-9 rounded-md flex items-center justify-center flex-shrink-0" style="background:#4338CA;">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"
+                     stroke-linecap="round" stroke-linejoin="round">
+                  <line x1="22" y1="2" x2="11" y2="13"/>
+                  <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                </svg>
+              </div>
+            </div>
+          </div>
+
+          <!-- Floating badge -->
+          <div class="absolute -bottom-4 -right-2 flex items-center gap-2 bg-white rounded-lg px-3 py-2.5"
+               style="border:1px solid #E5E7EB; box-shadow:0 4px 14px rgba(0,0,0,0.07);">
+            <div class="w-2 h-2 rounded-full" style="background:#22c55e; flex-shrink:0;"></div>
+            <span class="text-sm font-semibold text-gray-900">Tourne en local</span>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================== VALUE PROPS ======================== -->
+  <section id="features" class="py-20 bg-white" style="border-top:1px solid #F3F4F6;">
+    <div class="max-w-6xl mx-auto px-6">
+
+      <div class="reveal text-center mb-14">
+        <h2 class="font-extrabold tracking-tight text-gray-900 mb-3"
+            style="font-size:clamp(1.75rem,3.5vw,2.5rem); letter-spacing:-0.02em;">
+          Des agents qui vous appartiennent, <span style="color:#4338CA;">vraiment</span>
+        </h2>
+        <p class="text-gray-500 mx-auto" style="font-size:1.0625rem; max-width:540px; line-height:1.65;">
+          Pas d'abonnement, pas de cloud imposé. Vos Locrits vivent sur votre machine et ne partagent que ce que vous décidez.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+
+        <!-- Card: Local -->
+        <div class="card reveal reveal-d1 p-8">
+          <div class="w-12 h-12 flex items-center justify-center rounded-lg mb-5" style="background:#EEF2FF;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4338CA" stroke-width="1.5"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+              <polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+          </div>
+          <div class="text-xs font-bold uppercase tracking-widest mb-2" style="color:#4338CA;">Local d'abord</div>
+          <h3 class="text-lg font-bold text-gray-900 mb-3" style="letter-spacing:-0.01em;">Vos conversations restent chez vous</h3>
+          <p class="text-gray-500 leading-relaxed" style="font-size:0.9375rem;">
+            Les modèles tournent avec Ollama, les données sont enregistrées sur votre disque. La synchronisation Firebase existe, mais c'est vous qui l'activez.
+          </p>
+        </div>
+
+        <!-- Card: Memory -->
+        <div class="card reveal reveal-d2 p-8">
+          <div class="w-12 h-12 flex items-center justify-center rounded-lg mb-5" style="background:#fff8ed;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="1.5"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <ellipse cx="12" cy="5" rx="9" ry="3"/>
+              <path d="M3 5v14a9 3 0 0 0 18 0V5"/>
+              <path d="M3 12a9 3 0 0 0 18 0"/>
+            </svg>
+          </div>
+          <div class="text-xs font-bold uppercase tracking-widest mb-2" style="color:#D97706;">Mémoire persistante</div>
+          <h3 class="text-lg font-bold text-gray-900 mb-3" style="letter-spacing:-0.01em;">Un Locrit n'oublie pas</h3>
+          <p class="text-gray-500 leading-relaxed" style="font-size:0.9375rem;">
+            Messages, sessions, concepts&nbsp;: chaque Locrit garde sa propre mémoire d'une conversation à l'autre. Explorez-la, recherchez dedans, corrigez-la.
+          </p>
+        </div>
+
+        <!-- Card: Permissions -->
+        <div class="card reveal reveal-d3 p-8">
+          <div class="w-12 h-12 flex items-center justify-center rounded-lg mb-5" style="background:#EEF2FF;">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4338CA" stroke-width="1.5"
+                 stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <rect width="18" height="11" x="3" y="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+            </svg>
+          </div>
+          <div class="text-xs font-bold uppercase tracking-widest mb-2" style="color:#4338CA;">Permissions fines</div>
+          <h3 class="text-lg font-bold text-gray-900 mb-3" style="letter-spacing:-0.01em;">Vous décidez qui parle à qui</h3>
+          <p class="text-gray-500 leading-relaxed" style="font-size:0.9375rem;">
+            Pour chaque Locrit&nbsp;: ouvert aux humains, aux autres Locrits, à Internet&nbsp;? Accès aux logs, à la mémoire complète&nbsp;? Une case à cocher par réponse.
+          </p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================== PRODUCT TOUR ======================== -->
+  <section id="apercu" class="py-20" style="background:#FAFAFA;">
+    <div class="max-w-6xl mx-auto px-6">
+
+      <div class="reveal text-center mb-12">
+        <h2 class="font-extrabold tracking-tight text-gray-900 mb-3"
+            style="font-size:clamp(1.75rem,3.5vw,2.5rem); letter-spacing:-0.02em;">
+          L'interface, <span style="color:#4338CA;">telle qu'elle est</span>
+        </h2>
+        <p class="text-gray-500 mx-auto" style="font-size:1.0625rem; max-width:540px; line-height:1.65;">
+          Des captures de l'application en fonctionnement, sans retouche.
+        </p>
+      </div>
+
+      <div class="reveal grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-8 items-start">
+
+        <!-- Tabs -->
+        <div class="lg:col-span-4 order-2 lg:order-1 min-w-0">
+          <div id="tour-tabs" role="tablist" aria-label="Écrans de l'application"
+               class="no-scrollbar flex lg:flex-col gap-2 overflow-x-auto lg:overflow-visible -mx-6 px-6 lg:mx-0 lg:px-0 pb-1">
+
+            <button type="button" role="tab" aria-selected="true" aria-controls="tour-panel" class="tour-tab active"
+                    data-img="assets/screenshots/locrit-overview.webp"
+                    data-url="localhost:5173/my-locrits/Bob Technique"
+                    data-alt="Fiche du Locrit « Bob Technique » : modèle, statut, adresse publique, puis deux listes de permissions — « Ouvert à » et « Accès aux données »."
+                    data-desc="Modèle, statut, adresse publique, et surtout ses permissions : à qui il est ouvert, à quelles données il accède.">
+              <span class="tour-tab-title block font-bold whitespace-nowrap lg:whitespace-normal" style="font-size:0.9375rem;">Fiche d'un Locrit</span>
+              <span class="hidden lg:block text-gray-500 mt-1 leading-relaxed" style="font-size:0.875rem;">Modèle, statut, adresse publique, et surtout ses permissions&nbsp;: à qui il est ouvert, à quelles données il accède.</span>
+            </button>
+
+            <button type="button" role="tab" aria-selected="false" aria-controls="tour-panel" class="tour-tab" tabindex="-1"
+                    data-img="assets/screenshots/dashboard.webp"
+                    data-url="localhost:5173/dashboard"
+                    data-alt="Tableau de bord : compteurs de Locrits actifs et inactifs, puis la liste des Locrits récents avec un bouton Chat pour chacun."
+                    data-desc="Combien de Locrits tournent, lesquels sont à l'arrêt, et un accès direct au chat de chacun.">
+              <span class="tour-tab-title block font-bold whitespace-nowrap lg:whitespace-normal" style="font-size:0.9375rem;">Tableau de bord</span>
+              <span class="hidden lg:block text-gray-500 mt-1 leading-relaxed" style="font-size:0.875rem;">Combien de Locrits tournent, lesquels sont à l'arrêt, et un accès direct au chat de chacun.</span>
+            </button>
+
+            <button type="button" role="tab" aria-selected="false" aria-controls="tour-panel" class="tour-tab" tabindex="-1"
+                    data-img="assets/screenshots/my-locrits.webp"
+                    data-url="localhost:5173/my-locrits"
+                    data-alt="Page « Mes Locrits » : barre de recherche, filtres, tri, et quatre Locrits listés avec leur statut et leur modèle."
+                    data-desc="Recherche, filtres, tri. Chaque Locrit affiche son statut, son modèle et s'il est synchronisé ou purement local.">
+              <span class="tour-tab-title block font-bold whitespace-nowrap lg:whitespace-normal" style="font-size:0.9375rem;">Mes Locrits</span>
+              <span class="hidden lg:block text-gray-500 mt-1 leading-relaxed" style="font-size:0.875rem;">Recherche, filtres, tri. Chaque Locrit affiche son statut, son modèle et s'il est synchronisé ou purement local.</span>
+            </button>
+
+            <button type="button" role="tab" aria-selected="false" aria-controls="tour-panel" class="tour-tab" tabindex="-1"
+                    data-img="assets/screenshots/memory-overview.webp"
+                    data-url="localhost:5173/my-locrits/Bob Technique/memory"
+                    data-alt="Explorateur de mémoire de Bob Technique : recherche, onglets Messages, Sessions, Concepts et Souvenirs, compteurs et conversations récentes."
+                    data-desc="Ce que votre Locrit a retenu : messages, sessions, concepts, souvenirs. Recherchez, ajoutez, supprimez.">
+              <span class="tour-tab-title block font-bold whitespace-nowrap lg:whitespace-normal" style="font-size:0.9375rem;">Explorateur de mémoire</span>
+              <span class="hidden lg:block text-gray-500 mt-1 leading-relaxed" style="font-size:0.875rem;">Ce que votre Locrit a retenu&nbsp;: messages, sessions, concepts, souvenirs. Recherchez, ajoutez, supprimez.</span>
+            </button>
+
+            <button type="button" role="tab" aria-selected="false" aria-controls="tour-panel" class="tour-tab" tabindex="-1"
+                    data-img="assets/screenshots/setup-wizard.webp"
+                    data-url="localhost:5173"
+                    data-alt="Assistant de premier lancement, étape 1 sur 4 : « Bienvenue sur Locrits », avec quatre principes — local d'abord, privé et sécurisé, sync optionnelle, propulsé par Ollama."
+                    data-desc="Au premier lancement, quatre étapes pour tout régler. Ou un clic sur « Passer la config » pour commencer tout de suite.">
+              <span class="tour-tab-title block font-bold whitespace-nowrap lg:whitespace-normal" style="font-size:0.9375rem;">Premier lancement</span>
+              <span class="hidden lg:block text-gray-500 mt-1 leading-relaxed" style="font-size:0.875rem;">Au premier lancement, quatre étapes pour tout régler. Ou un clic sur «&nbsp;Passer la config&nbsp;» pour commencer tout de suite.</span>
+            </button>
+
+          </div>
+
+          <!-- Caption (mobile only: desktop shows descriptions inside the tabs) -->
+          <p id="tour-caption" class="lg:hidden text-gray-500 mt-4 leading-relaxed" style="font-size:0.9375rem;">
+            Modèle, statut, adresse publique, et surtout ses permissions : à qui il est ouvert, à quelles données il accède.
+          </p>
+        </div>
+
+        <!-- Viewer -->
+        <div id="tour-panel" role="tabpanel" class="lg:col-span-8 order-1 lg:order-2 min-w-0">
+          <div class="rounded-xl overflow-hidden bg-white" style="border:1px solid #E5E7EB; box-shadow:0 20px 60px rgba(0,0,0,0.10);">
+            <!-- Browser bar -->
+            <div class="flex items-center gap-1.5 px-4 py-2.5" style="background:#F3F4F6; border-bottom:1px solid #E5E7EB;">
+              <div class="w-3 h-3 rounded-full flex-shrink-0" style="background:#ff5f57;"></div>
+              <div class="w-3 h-3 rounded-full flex-shrink-0" style="background:#febc2e;"></div>
+              <div class="w-3 h-3 rounded-full flex-shrink-0" style="background:#28c840;"></div>
+              <div class="ml-3 flex-1 min-w-0 rounded-md bg-white px-3 py-1 truncate"
+                   style="border:1px solid #E5E7EB; font-size:0.75rem; color:#6b7280; font-family:'JetBrains Mono',monospace;">
+                <span id="tour-url">localhost:5173/my-locrits/Bob Technique</span>
+              </div>
+            </div>
+            <img id="tour-img" src="assets/screenshots/locrit-overview.webp" width="2000" height="1316"
+                 class="block w-full h-auto"
+                 alt="Fiche du Locrit « Bob Technique » : modèle, statut, adresse publique, puis deux listes de permissions — « Ouvert à » et « Accès aux données ».">
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================== HOW IT WORKS ======================== -->
+  <section id="how-it-works" class="py-20 bg-white" style="border-top:1px solid #F3F4F6;">
+    <div class="max-w-3xl mx-auto px-6">
+
+      <div class="reveal text-center mb-14">
+        <h2 class="font-extrabold tracking-tight text-gray-900 mb-3"
+            style="font-size:clamp(1.75rem,3.5vw,2.5rem); letter-spacing:-0.02em;">
+          Comment ça marche
+        </h2>
+        <p class="text-gray-500" style="font-size:1.0625rem; line-height:1.65;">
+          Cinq étapes, de l'installation à la première conversation.
+        </p>
+      </div>
+
+      <!-- Steps -->
+      <div class="flex flex-col">
+
+        <!-- Step 1 -->
+        <div class="reveal flex gap-5">
+          <div class="flex flex-col items-center flex-shrink-0">
+            <div class="w-11 h-11 rounded-full flex items-center justify-center font-bold text-white flex-shrink-0"
+                 style="background:#4338CA;">1</div>
+            <div class="step-line"></div>
+          </div>
+          <div class="pb-8 pt-2">
+            <h3 class="text-base font-bold text-gray-900 mb-1">Installez Ollama</h3>
+            <p class="text-gray-500 leading-relaxed" style="font-size:0.9375rem;">
+              C'est lui qui fait tourner les modèles sur votre machine. Récupérez-en un avec
+              <code class="font-mono rounded px-1.5 py-0.5" style="background:#F3F4F6; font-size:0.8125rem; color:#374151;">ollama run llama3.2</code>&nbsp;:
+              Locrits le détecte automatiquement.
+            </p>
+          </div>
+        </div>
+
+        <!-- Step 2 -->
+        <div class="reveal reveal-d1 flex gap-5">
+          <div class="flex flex-col items-center flex-shrink-0">
+            <div class="w-11 h-11 rounded-full flex items-center justify-center font-bold flex-shrink-0"
+                 style="background:white; border:2px solid #4338CA; color:#4338CA;">2</div>
+            <div class="step-line"></div>
+          </div>
+          <div class="pb-8 pt-2">
+            <h3 class="text-base font-bold text-gray-900 mb-1">Lancez Locrits</h3>
+            <p class="text-gray-500 leading-relaxed" style="font-size:0.9375rem;">
+              Une seule commande,
+              <code class="font-mono rounded px-1.5 py-0.5" style="background:#F3F4F6; font-size:0.8125rem; color:#374151;">./start.sh</code>,
+              installe les dépendances puis démarre le backend et l'interface web. L'assistant de configuration vous accueille.
+            </p>
+          </div>
+        </div>
+
+        <!-- Step 3 -->
+        <div class="reveal reveal-d2 flex gap-5">
+          <div class="flex flex-col items-center flex-shrink-0">
+            <div class="w-11 h-11 rounded-full flex items-center justify-center font-bold flex-shrink-0"
+                 style="background:white; border:2px solid #4338CA; color:#4338CA;">3</div>
+            <div class="step-line"></div>
+          </div>
+          <div class="pb-8 pt-2">
+            <h3 class="text-base font-bold text-gray-900 mb-1">Créez votre premier Locrit</h3>
+            <p class="text-gray-500 leading-relaxed" style="font-size:0.9375rem;">
+              Un nom, une description de son rôle, un modèle Ollama. Expert technique, assistante de recherche, compagnon d'organisation&nbsp;: à vous de lui donner son caractère.
+            </p>
+          </div>
+        </div>
+
+        <!-- Step 4 -->
+        <div class="reveal reveal-d3 flex gap-5">
+          <div class="flex flex-col items-center flex-shrink-0">
+            <div class="w-11 h-11 rounded-full flex items-center justify-center font-bold flex-shrink-0"
+                 style="background:white; border:2px solid #D97706; color:#D97706;">4</div>
+            <div class="step-line"></div>
+          </div>
+          <div class="pb-8 pt-2">
+            <h3 class="text-base font-bold text-gray-900 mb-1">Réglez ses accès</h3>
+            <p class="text-gray-500 leading-relaxed" style="font-size:0.9375rem;">
+              Cochez ce qu'il a le droit de faire&nbsp;: parler aux humains, aux autres Locrits, accepter des invitations, lire les logs ou sa mémoire complète. Tout le reste lui est fermé.
+            </p>
+          </div>
+        </div>
+
+        <!-- Step 5 -->
+        <div class="reveal reveal-d4 flex gap-5">
+          <div class="flex-shrink-0">
+            <div class="w-11 h-11 rounded-full flex items-center justify-center font-bold text-white"
+                 style="background:#D97706;">5</div>
+          </div>
+          <div class="pt-2">
+            <h3 class="text-base font-bold text-gray-900 mb-1">Discutez, il s'en souviendra</h3>
+            <p class="text-gray-500 leading-relaxed" style="font-size:0.9375rem;">
+              Chaque échange enrichit sa mémoire. Demandez-lui de retenir un point précis, ou ouvrez l'explorateur pour voir — et corriger — ce qu'il a gardé.
+            </p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================== BENEFITS ======================== -->
+  <section id="benefits" class="py-20" style="background:#FAFAFA; border-top:1px solid #F3F4F6;">
+    <div class="max-w-6xl mx-auto px-6">
+
+      <div class="reveal text-center mb-14">
+        <h2 class="font-extrabold tracking-tight text-gray-900 mb-3"
+            style="font-size:clamp(1.75rem,3.5vw,2.5rem); letter-spacing:-0.02em;">
+          Pour qui&nbsp;?
+        </h2>
+        <p class="text-gray-500 mx-auto" style="font-size:1.0625rem; max-width:520px; line-height:1.65;">
+          Du premier essai d'IA locale à l'expérimentation multi-agents.
+        </p>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+
+        <!-- Curious -->
+        <div class="card reveal reveal-d1 p-7">
+          <div class="flex items-center gap-3 mb-5">
+            <div class="w-10 h-10 flex items-center justify-center rounded-lg flex-shrink-0" style="background:#EEF2FF;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4338CA" stroke-width="1.5"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+              </svg>
+            </div>
+            <h3 class="font-bold text-gray-900">Pour découvrir l'IA locale</h3>
+          </div>
+          <ul class="space-y-2.5">
+            <li class="flex items-start gap-2 text-gray-600" style="font-size:0.9375rem;">
+              <svg class="flex-shrink-0 mt-0.5" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4338CA" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+              Aucun compte à créer
+            </li>
+            <li class="flex items-start gap-2 text-gray-600" style="font-size:0.9375rem;">
+              <svg class="flex-shrink-0 mt-0.5" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4338CA" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+              Assistant de configuration au premier lancement
+            </li>
+            <li class="flex items-start gap-2 text-gray-600" style="font-size:0.9375rem;">
+              <svg class="flex-shrink-0 mt-0.5" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4338CA" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+              Le modèle Ollama de votre choix
+            </li>
+            <li class="flex items-start gap-2 text-gray-600" style="font-size:0.9375rem;">
+              <svg class="flex-shrink-0 mt-0.5" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4338CA" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+              Thème clair ou sombre
+            </li>
+          </ul>
+        </div>
+
+        <!-- Privacy -->
+        <div class="card reveal reveal-d2 p-7">
+          <div class="flex items-center gap-3 mb-5">
+            <div class="w-10 h-10 flex items-center justify-center rounded-lg flex-shrink-0" style="background:#fff8ed;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="1.5"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              </svg>
+            </div>
+            <h3 class="font-bold text-gray-900">Pour garder la main sur ses données</h3>
+          </div>
+          <ul class="space-y-2.5">
+            <li class="flex items-start gap-2 text-gray-600" style="font-size:0.9375rem;">
+              <svg class="flex-shrink-0 mt-0.5" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+              Conversations et mémoire stockées sur votre disque
+            </li>
+            <li class="flex items-start gap-2 text-gray-600" style="font-size:0.9375rem;">
+              <svg class="flex-shrink-0 mt-0.5" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+              Synchronisation cloud désactivée par défaut
+            </li>
+            <li class="flex items-start gap-2 text-gray-600" style="font-size:0.9375rem;">
+              <svg class="flex-shrink-0 mt-0.5" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+              Permissions réglées Locrit par Locrit
+            </li>
+            <li class="flex items-start gap-2 text-gray-600" style="font-size:0.9375rem;">
+              <svg class="flex-shrink-0 mt-0.5" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+              Mémoire consultable et effaçable à tout moment
+            </li>
+          </ul>
+        </div>
+
+        <!-- Developers -->
+        <div class="card reveal reveal-d3 p-7">
+          <div class="flex items-center gap-3 mb-5">
+            <div class="w-10 h-10 flex items-center justify-center rounded-lg flex-shrink-0" style="background:#EEF2FF;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4338CA" stroke-width="1.5"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="16 18 22 12 16 6"/>
+                <polyline points="8 6 2 12 8 18"/>
+              </svg>
+            </div>
+            <h3 class="font-bold text-gray-900">Pour les développeurs</h3>
+          </div>
+          <ul class="space-y-2.5">
+            <li class="flex items-start gap-2 text-gray-600" style="font-size:0.9375rem;">
+              <svg class="flex-shrink-0 mt-0.5" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4338CA" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+              API REST et WebSocket
+            </li>
+            <li class="flex items-start gap-2 text-gray-600" style="font-size:0.9375rem;">
+              <svg class="flex-shrink-0 mt-0.5" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4338CA" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+              Backend Python modulaire, interface React + TypeScript
+            </li>
+            <li class="flex items-start gap-2 text-gray-600" style="font-size:0.9375rem;">
+              <svg class="flex-shrink-0 mt-0.5" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4338CA" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+              Moteurs de mémoire interchangeables&nbsp;: fichiers, graphe, vecteurs
+            </li>
+            <li class="flex items-start gap-2 text-gray-600" style="font-size:0.9375rem;">
+              <svg class="flex-shrink-0 mt-0.5" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#4338CA" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+              Configuration lisible dans un simple fichier YAML
+            </li>
+          </ul>
+        </div>
+
+        <!-- Multi-agent -->
+        <div class="card reveal reveal-d4 p-7">
+          <div class="flex items-center gap-3 mb-5">
+            <div class="w-10 h-10 flex items-center justify-center rounded-lg flex-shrink-0" style="background:#fff8ed;">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="1.5"
+                   stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <circle cx="18" cy="5" r="3"/>
+                <circle cx="6" cy="12" r="3"/>
+                <circle cx="18" cy="19" r="3"/>
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+              </svg>
+            </div>
+            <h3 class="font-bold text-gray-900">Pour explorer le multi-agents</h3>
+            <span class="rounded-full px-2 py-0.5 font-semibold flex-shrink-0"
+                  style="background:#fff8ed; border:1px solid #fde3b8; color:#b86205; font-size:0.6875rem;">Expérimental</span>
+          </div>
+          <ul class="space-y-2.5">
+            <li class="flex items-start gap-2 text-gray-600" style="font-size:0.9375rem;">
+              <svg class="flex-shrink-0 mt-0.5" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+              Des Locrits ouverts aux autres Locrits
+            </li>
+            <li class="flex items-start gap-2 text-gray-600" style="font-size:0.9375rem;">
+              <svg class="flex-shrink-0 mt-0.5" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+              Adresse publique via tunnel SSH
+            </li>
+            <li class="flex items-start gap-2 text-gray-600" style="font-size:0.9375rem;">
+              <svg class="flex-shrink-0 mt-0.5" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+              Page publique propre à chaque Locrit
+            </li>
+            <li class="flex items-start gap-2 text-gray-600" style="font-size:0.9375rem;">
+              <svg class="flex-shrink-0 mt-0.5" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#D97706" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>
+              Recherche web intégrée via DuckDuckGo
+            </li>
+          </ul>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================== FINAL CTA ======================== -->
+  <section id="cta" class="py-20" style="background:#EEF2FF; border-top:1px solid #C7D2FE;">
+    <div class="max-w-2xl mx-auto px-6 text-center">
+      <div class="reveal">
+        <h2 class="font-extrabold tracking-tight text-gray-900 mb-4"
+            style="font-size:clamp(1.75rem,3.5vw,2.75rem); letter-spacing:-0.02em;">
+          Prêt à créer votre premier Locrit&nbsp;?
+        </h2>
+        <p class="text-gray-500 mb-8" style="font-size:1.0625rem; line-height:1.65;">
+          Deux commandes, et il tourne chez vous.
+        </p>
+
+        <div class="rounded-xl overflow-hidden text-left mx-auto mb-8" style="background:#1e1e2e; max-width:30rem; box-shadow:0 12px 36px rgba(0,0,0,0.14);">
+          <div class="flex items-center gap-1.5 px-4 py-2.5" style="background:#2a2a3d;">
+            <div class="w-2.5 h-2.5 rounded-full" style="background:#ff5f57;"></div>
+            <div class="w-2.5 h-2.5 rounded-full" style="background:#febc2e;"></div>
+            <div class="w-2.5 h-2.5 rounded-full" style="background:#28c840;"></div>
+          </div>
+          <pre class="m-0 px-5 py-4 overflow-x-auto" style="font-size:0.8125rem; line-height:1.85; font-family:'JetBrains Mono',monospace;"><code><span style="color:#6b7280;">$</span> <span style="color:#a6e3a1;">git</span> <span style="color:#cdd6f4;">clone</span> <span style="color:#fab387;">https://github.com/poqudrof/Locrits.git</span>
+<span style="color:#6b7280;">$</span> <span style="color:#a6e3a1;">cd</span> <span style="color:#cdd6f4;">Locrits &amp;&amp;</span> <span style="color:#a6e3a1;">./start.sh</span></code></pre>
+        </div>
+
+        <div class="flex flex-wrap gap-3 justify-center">
+          <a href="https://github.com/poqudrof/Locrits" class="btn-primary" style="font-size:1rem; padding:0.875rem 2rem;">
+            Voir sur GitHub
+          </a>
+          <a href="https://github.com/poqudrof/Locrits#readme" class="btn-outline" style="font-size:1rem; padding:0.875rem 2rem;">
+            Lire le guide
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ======================== FOOTER ======================== -->
+  <footer class="py-8 bg-white" style="border-top:1px solid #E5E7EB;">
+    <div class="max-w-6xl mx-auto px-6">
+      <div class="flex flex-wrap justify-between items-center gap-4">
+
+        <div class="flex items-center gap-2">
+          <svg width="22" height="22" viewBox="0 0 30 30" fill="none" aria-hidden="true">
+            <rect width="30" height="30" rx="8" fill="#4338CA"/>
+            <path d="M8 14.5L15 8.5L22 14.5V21.5H8V14.5Z"
+              stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M13 21.5V17H17V21.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <circle cx="22.5" cy="8.5" r="2.5" fill="#D97706"/>
+          </svg>
+          <span class="font-bold text-gray-900">locrits</span>
+        </div>
+
+        <div class="flex gap-6">
+          <a href="https://github.com/poqudrof/Locrits" class="text-sm text-gray-400 no-underline hover:text-primary transition-colors">GitHub</a>
+          <a href="https://github.com/poqudrof/Locrits#readme" class="text-sm text-gray-400 no-underline hover:text-primary transition-colors">Documentation</a>
+          <a href="https://github.com/poqudrof" class="text-sm text-gray-400 no-underline hover:text-primary transition-colors">Contact</a>
+        </div>
+
+        <p class="text-sm text-gray-300 m-0">© 2026 Jérémy Laviole. Tous droits réservés.</p>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ======================== JS ======================== -->
+  <script>
+    // Scroll reveal with Intersection Observer
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach(e => {
+        if (e.isIntersecting) {
+          e.target.classList.add('visible');
+          observer.unobserve(e.target);
+        }
+      });
+    }, { threshold: 0.08, rootMargin: '0px 0px -30px 0px' });
+
+    document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+    // Navbar background on scroll
+    const navbar = document.getElementById('navbar');
+    window.addEventListener('scroll', () => {
+      navbar.classList.toggle('scrolled', window.scrollY > 24);
+    }, { passive: true });
+
+    // Mobile menu
+    function toggleMenu() {
+      const m = document.getElementById('mobile-menu');
+      m.classList.toggle('hidden');
+      m.classList.toggle('flex');
+    }
+    function closeMenu() {
+      const m = document.getElementById('mobile-menu');
+      m.classList.add('hidden');
+      m.classList.remove('flex');
+    }
+
+    // Close mobile menu on resize to desktop
+    window.addEventListener('resize', () => {
+      if (window.innerWidth >= 768) closeMenu();
+    });
+
+    // Product tour: swap the screenshot when a tab is picked
+    const tabs = Array.from(document.querySelectorAll('.tour-tab'));
+    const tourImg = document.getElementById('tour-img');
+    const tourUrl = document.getElementById('tour-url');
+    const tourCaption = document.getElementById('tour-caption');
+
+    function selectTab(tab, focus) {
+      tabs.forEach(t => {
+        const on = t === tab;
+        t.classList.toggle('active', on);
+        t.setAttribute('aria-selected', on ? 'true' : 'false');
+        t.tabIndex = on ? 0 : -1;
+      });
+      tourUrl.textContent = tab.dataset.url;
+      tourCaption.textContent = tab.dataset.desc;
+      if (focus) tab.focus();
+      tab.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+
+      if (tourImg.getAttribute('src') === tab.dataset.img) return;
+      const next = new Image();
+      next.onload = () => {
+        tourImg.src = tab.dataset.img;
+        tourImg.alt = tab.dataset.alt;
+        tourImg.classList.remove('swapping');
+      };
+      tourImg.classList.add('swapping');
+      next.src = tab.dataset.img;
+    }
+
+    tabs.forEach((tab, i) => {
+      tab.addEventListener('click', () => selectTab(tab, false));
+      tab.addEventListener('keydown', (e) => {
+        const step = { ArrowDown: 1, ArrowRight: 1, ArrowUp: -1, ArrowLeft: -1 }[e.key];
+        if (!step) return;
+        e.preventDefault();
+        selectTab(tabs[(i + step + tabs.length) % tabs.length], true);
+      });
+    });
+
+    // Warm the cache once the tour is near, so tab switches are instant.
+    const tourSection = document.getElementById('apercu');
+    const preloader = new IntersectionObserver((entries) => {
+      if (!entries.some(e => e.isIntersecting)) return;
+      tabs.forEach(t => { new Image().src = t.dataset.img; });
+      preloader.disconnect();
+    }, { rootMargin: '400px' });
+    preloader.observe(tourSection);
+  </script>
+
+</body>
+</html>

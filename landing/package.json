@@ -1,0 +1,12 @@
+{
+  "name": "locrits-landing",
+  "private": true,
+  "description": "Landing page statique de Locrits",
+  "scripts": {
+    "build": "mkdir -p dist && tailwindcss -i src/input.css -o dist/styles.css --minify && cp index.html dist/ && cp -r assets dist/",
+    "dev": "tailwindcss -i src/input.css -o styles.css --watch"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.17"
+  }
+}
